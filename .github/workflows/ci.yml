@@ -13,5 +13,7 @@ jobs:
         run: cargo build --release
       - name: Tests
         run: tests/run_tests.sh
+      - name: Library tests (embedded interpreter)
+        run: cargo test --release -p tulpar
       - name: Differential fuzzer
         run: python3 tools/fuzz.py 0 60
