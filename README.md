@@ -6,13 +6,15 @@
 
 **English** · [Русский](README.ru.md) · [Қазақша](README.kk.md)
 
+![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Language: Tulpar](https://img.shields.io/badge/language-Tulpar_(.tlp)-e8b923) ![Platform: Linux x86-64](https://img.shields.io/badge/platform-linux--x86--64-blue) ![Written in Rust](https://img.shields.io/badge/compiler-Rust-orange)
+
 A programming language with **Kazakh syntax** that is as simple as Python but **compiles to native machine code**.
 Source files use the `.tlp` extension. The compiler and the runtime are written **from scratch**: no LLVM, no C compiler, no libc.
 
 * static types with **type inference** (`x = 5` is a `бүтін`, an integer)
 * an automatic **garbage collector**, plus optional **manual memory management** (`бөл` / `босат`)
 * Python-style indentation, classes, inheritance, tuples, comprehensions, f-strings, lambdas, sets, imports
-* fast: ~30x faster than Python, within 1.0–2.4x of C `-O2` and Rust (real numbers below)
+* fast: 17–140x faster than CPython on the benchmarks below, within 1.0–2.4x of C `-O2` and Rust
 * error messages in Kazakh, with source line and caret; runtime errors print a stack trace with file and line
 
 ```python
@@ -164,7 +166,7 @@ f-strings: `f"{x}"` or `ф"{x}"`; formatting: `{x:.2f}`, `{x:8}`, `{s:>10}`, `{s
 `абс`, `мин`, `макс`, `түбір`, `еден`, `төбе`, `синус`, `косинус`, `тангенс`, `арктангенс`, `арктангенс2`,
 `экспонента`, `логарифм`, `логарифм10`, `ПИ`, `Е`, `**`,
 `файл_оқы(path)`, `файл_жаз(path, text)`, `файл_қос(path, text)`, `аргтар()`,
-`тыңда`, `қабылда`, `қосыл`, `желі_оқы`, `желі_жаз`, `желі_жап`, `уақыт()`, `кездейсоқ()`, `кездейсоқ_аралық(a, b)`, `тұқым(n)`, `шығу(code)`, `қате(message)`, `тексер cond, message`.
+`тыңда`, `тыңда_локал`, `қабылда`, `қосыл`, `желі_оқы`, `желі_жаз`, `желі_жап`, `уақыт()`, `кездейсоқ()`, `кездейсоқ_аралық(a, b)`, `тұқым(n)`, `шығу(code)`, `қате(message)`, `тексер cond, message`.
 
 ## Memory management
 
@@ -192,7 +194,7 @@ Objects without pointers (strings, `тізім[бүтін]`, …) are not scanne
 ## Networking (TCP, HTTP)
 
 ```python
-сервер = тыңда(8080)                  # listen on a port, returns the server fd
+сервер = тыңда_локал(8080)            # listen on localhost only (тыңда(8080) = all interfaces)
 әзірше рас:
     клиент = қабылда(сервер)          # wait for the next connection
     сұраныс = желі_оқы(клиент)        # one read (up to 64 KB), "" when closed
@@ -256,14 +258,14 @@ Object layouts: strings `[byte length][char count][bytes]`, lists `[length][capa
 
 ## Performance
 
-`bench/` (Linux x86-64). Rust is `rustc -O`, C is `gcc -O2`, Python is CPython 3:
+`bench/` (Linux x86-64, 8 cores). Rust is `rustc -O`, C is `gcc -O2`, Python is CPython 3.14 (`bench/bench.py`). Wall-clock time of a single run:
 
 | benchmark | Tulpar | Rust | C `-O2` | Python 3 |
 |---|---|---|---|---|
-| Collatz, 3M numbers | 0.59 s | 0.34 s | 0.47 s | ~25 s |
-| Sieve of Eratosthenes, 2·10⁷ | 0.13 s | 0.11 s | 0.10 s | — |
-| float loop, 10⁸ | 0.13 s | 0.12 s | 0.13 s | — |
-| `фиб(42)` | 1.55 s | 0.65 s | 0.39 s | ~60 s |
+| Collatz, 3M numbers | 0.59 s | 0.34 s | 0.47 s | 33 s |
+| Sieve of Eratosthenes, 2·10⁷ | 0.13 s | 0.11 s | 0.10 s | 2.2 s |
+| float loop, 10⁸ | 0.13 s | 0.12 s | 0.13 s | 18 s |
+| `фиб(42)` | 1.55 s | 0.65 s | 0.39 s | 36 s |
 
 Tulpar is close to Rust/C on plain loops, ~2.4x slower on recursion and ~1.7x on branchy code: there is no recursion unrolling,
 vectorization or smarter `cmov` selection yet. Optimizations: inlining, linear-scan register allocation, if-conversion (`cmov`),

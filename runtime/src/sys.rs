@@ -369,9 +369,9 @@ pub fn install_signals() {
         const SA_RESTORER: u64 = 0x0400_0000;
         const SA_NODEFER: u64 = 0x4000_0000;
         let sa = KSigaction {
-            handler: on_signal as usize,
+            handler: on_signal as *const () as usize,
             flags: SA_SIGINFO | SA_ONSTACK | SA_RESTORER | SA_NODEFER,
-            restorer: tlp_sigreturn as usize,
+            restorer: tlp_sigreturn as *const () as usize,
             mask: 0,
         };
         for sig in [11usize, 7, 8] {

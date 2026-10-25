@@ -140,6 +140,7 @@ pub enum Bi {
     /// (тізім, кілттер тізімі): түрі 0 бүтін, 1 нақты, 2 мәтін
     ListSortBy(u8),
     NetListen,
+    NetListenLocal,
     StrBytes,
     NetAccept,
     NetConnect,
@@ -235,6 +236,7 @@ pub enum Target {
 
 #[derive(Clone, Debug)]
 pub struct Local {
+    #[allow(dead_code)]
     pub name: String,
     pub ty: Ty,
 }
@@ -266,6 +268,7 @@ pub struct ClassInfo {
 
 #[derive(Clone, Debug)]
 pub struct GlobalInfo {
+    #[allow(dead_code)]
     pub name: String,
     pub ty: Ty,
 }
@@ -277,12 +280,6 @@ pub struct Module {
     pub main: FuncId,
     /// виртуалды әдістер: аты және әр класс идентификаторы үшін функция
     pub vtables: Vec<(String, Vec<Option<FuncId>>)>,
-}
-
-impl Module {
-    pub fn ty_name(&self, t: &Ty) -> String {
-        ty_name(&self.classes, t)
-    }
 }
 
 pub fn ty_name(classes: &[ClassInfo], t: &Ty) -> String {

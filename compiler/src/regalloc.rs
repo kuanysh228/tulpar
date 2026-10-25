@@ -6,8 +6,6 @@ pub const RAX: u8 = 0;
 pub const RCX: u8 = 1;
 pub const RDX: u8 = 2;
 pub const RBX: u8 = 3;
-pub const RSP: u8 = 4;
-pub const RBP: u8 = 5;
 pub const RSI: u8 = 6;
 pub const RDI: u8 = 7;
 pub const R8: u8 = 8;
@@ -47,9 +45,6 @@ impl Bits {
     }
     fn set(&mut self, i: usize) {
         self.w[i / 64] |= 1 << (i % 64);
-    }
-    fn clear(&mut self, i: usize) {
-        self.w[i / 64] &= !(1 << (i % 64));
     }
     fn get(&self, i: usize) -> bool {
         self.w[i / 64] >> (i % 64) & 1 == 1

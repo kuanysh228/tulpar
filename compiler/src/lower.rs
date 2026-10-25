@@ -308,13 +308,6 @@ impl<'a> FB<'a> {
     fn val(&mut self, e: &TExpr) -> VReg {
         self.expr(e).expect("мән күтілген")
     }
-    fn gc_flags(t: &Ty) -> i64 {
-        if t.is_gc_ref() {
-            0
-        } else {
-            1
-        }
-    }
     fn width(t: &Ty) -> Width {
         if *t == Ty::Byte {
             Width::B1
@@ -1173,10 +1166,11 @@ impl<'a> FB<'a> {
                 let s = self.val(&args[0]);
                 self.load(RC::I, s, 0)
             }
-            Bi::NetListen | Bi::NetAccept | Bi::NetRead => {
+            Bi::NetListen | Bi::NetListenLocal | Bi::NetAccept | Bi::NetRead => {
                 let a = self.val(&args[0]);
                 let f = match bi {
                     Bi::NetListen => "tlp_net_listen",
+                    Bi::NetListenLocal => "tlp_net_listen_local",
                     Bi::NetAccept => "tlp_net_accept",
                     _ => "tlp_net_read",
                 };

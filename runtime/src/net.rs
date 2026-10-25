@@ -25,16 +25,26 @@ fn addr(ip: u32, port: i64) -> SockAddrIn {
     SockAddrIn { family: 2, port: (port as u16).to_be(), addr: ip.to_be(), zero: [0; 8] }
 }
 
-/// Сервер сокетін ашады (барлық интерфейстерде), fd қайтарады.
+/// Сервер сокетін барлық интерфейстерде ашады, fd қайтарады.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn tlp_net_listen(port: i64) -> i64 {
+    listen_on(0, port)
+}
+
+/// Тек 127.0.0.1 бойынша тыңдайды (сыртқы желіден қолжетімсіз).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tlp_net_listen_local(port: i64) -> i64 {
+    listen_on(0x7f00_0001, port)
+}
+
+unsafe fn listen_on(ip: u32, port: i64) -> i64 {
     let fd = sys3(SYS_SOCKET, 2, 1, 0);
     if fd < 0 {
         fatal("сокет жасау мүмкін емес".as_bytes());
     }
     let one: i32 = 1;
     sys6(SYS_SETSOCKOPT, fd as usize, 1, 2, &one as *const _ as usize, 4, 0); // SO_REUSEADDR
-    let a = addr(0, port);
+    let a = addr(ip, port);
     if sys3(SYS_BIND, fd as usize, &a as *const _ as usize, 16) < 0 {
         let mut sb = Sb::new();
         sb.push_bytes("портты тыңдау мүмкін емес (бос емес пе?): ".as_bytes());

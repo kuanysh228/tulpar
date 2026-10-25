@@ -1,22 +1,29 @@
-# Tulpar-ды GitHub Linguist-ке қосу
+# Getting "Tulpar" into GitHub's language statistics
 
-`.gitattributes` ішіндегі `linguist-language=Tulpar` **жеке өзі жеткіліксіз**: Linguist тек өз тізіміндегі
-тілдердің атын көрсетеді, белгісіз атауды елемейді. "Tulpar" тілі статистикада көріну үшін оны
-https://github.com/github-linguist/linguist репозиторийіне pull request арқылы қосу керек.
+## What does NOT work
 
-## Linguist талаптары (CONTRIBUTING.md бойынша, қосар алдында өзіңіз қайта тексеріңіз)
+`.gitattributes` with `*.tlp linguist-language=Tulpar` (already in this repo) is accepted by GitHub only if
+"Tulpar" is a language that **Linguist already knows**. For an unknown name the override is ignored and the
+`.tlp` files stay unclassified, so they do not appear in the language bar. This was checked with
+`gh api repos/kuanysh228/tulpar/languages`. No file inside a repository can add a new language name.
 
-1. Кеңейтім (`.tlp`) GitHub-та көпшілік қолданысында болуы керек: әдетте кемінде ~200 бөлек репозиторий/пайдаланушы.
-   Қазір тіл жаңа, сондықтан алдымен репозиторийді жариялап, қолданушылар жинау керек.
-2. `lib/linguist/languages.yml` ішіне жазба қосу — `linguist/languages.yml.snippet` дайын үлгі.
-3. TextMate грамматикасы (рұқсат етілген лицензиямен): `editors/vscode/syntaxes/tulpar.tmLanguage.json`
-   (scope `source.tulpar`). Linguist оны `vendor/grammars` ішіне git submodule ретінде қосады —
-   яғни грамматика бөлек публичный репозиторийде болуы керек.
-4. `samples/Tulpar/` ішіне нақты .tlp үлгілері (`examples/` және `tests/progs/` файлдарынан алуға болады).
-5. `script/add-grammar`, `script/update-ids`, `bundle exec rake test` орындау.
+## What works only for a known language
 
-## Қазір не істейді
+`.gitattributes` can relabel files as an *existing* Linguist language, e.g. `*.tlp linguist-language=Python`.
+The files are then counted and shown under that other name, not as Tulpar.
 
-* `.gitattributes` Linguist-ке `.tlp` — Tulpar деп айтады және оларды "detectable" деп белгілейді.
-  Тіл Linguist-ке қосылғанда, бұл файл дәл сол күйінде жұмыс істей бастайды.
-* Бұған дейін GitHub `.tlp` файлдарын тілдер статистикасына енгізбейді (жеке репозиторийде де).
+## Official route (adding Tulpar to Linguist)
+
+Linguist's own rules (CONTRIBUTING.md, "Language extension and filename usage requirements"):
+
+* very new / hobby languages are **not accepted**: at least **2000 `.tlp` files** indexed on public GitHub in the
+  last year (GitHub code search, forks excluded), spread over many unique `user/repo` combinations;
+* a TextMate grammar in a **separate public repository** with a permissive license
+  (`editors/vscode/syntaxes/tulpar.tmLanguage.json`, scope `source.tulpar`, is ready to be moved there);
+* at least one (preferably two) real sample files in `samples/Tulpar/` — ready in `linguist/samples/Tulpar/`, MIT;
+* an entry in `lib/linguist/languages.yml` — ready in `linguist/languages.yml.snippet` (omit `language_id`);
+* then `script/add-grammar <grammar repo url>`, `script/update-ids`, `bundle exec rake test`, and a PR that links
+  the code-search result.
+
+Until the usage threshold is reached the PR will be closed, so the realistic plan is: make the repository public,
+grow real-world usage, then submit.

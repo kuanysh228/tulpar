@@ -418,10 +418,9 @@ fn if_convert_once(f: &mut IrFunc) -> bool {
     for h in 0..nb {
         let (cc, a, bop, t, ff) = match f.blocks[h].term {
             Term::Br { cc, a, b, t, f } => (cc, a, Some(b), t, f),
-            Term::BrI { cc, a, imm, t, f } => (cc, a, None, t, f),
+            Term::BrI { cc, a, t, f, .. } => (cc, a, None, t, f),
             _ => continue,
         };
-        let _ = imm_of(&f.blocks[h].term);
         let (t, ff) = (t as usize, ff as usize);
         let arm_ok = |x: usize, f: &IrFunc| -> Option<usize> {
             // x — жеке жеке қолы: бір предшественник, `Jmp(m)`, аз әрі таза нұсқаулар
@@ -559,4 +558,3 @@ fn if_convert_once(f: &mut IrFunc) -> bool {
     false
 }
 
-fn imm_of(_t: &Term) {}
