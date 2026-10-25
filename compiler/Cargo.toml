@@ -8,3 +8,7 @@ license = "MIT"
 [[bin]]
 name = "tulpar"
 path = "src/main.rs"
+
+[lib]
+name = "tulpar"
+path = "src/lib.rs"

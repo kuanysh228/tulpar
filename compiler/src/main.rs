@@ -1,18 +1,7 @@
-mod ast;
-mod check;
-mod codegen;
-mod diag;
-mod hir;
-mod inline;
-mod ir;
-mod lexer;
-mod loader;
-mod lower;
-mod opt;
-mod parser;
-mod regalloc;
 
 use std::path::{Path, PathBuf};
+
+use tulpar::{check, codegen, inline, loader, lower, opt};
 use std::process::{exit, Command};
 
 const USAGE: &str = "\
@@ -37,6 +26,9 @@ struct Opts {
 fn compile_to_asm(path: &str, o: &Opts) -> Result<String, String> {
     let prog = loader::load(path).map_err(|d| d.render())?;
     let module = check::Checker::check_program(&prog).map_err(|d| d.render())?;
+    if let Some(f) = module.funcs.iter().find(|f| f.external) {
+        return Err(format!("қате: `сыртқы` функция `{}` тек платформа ішінде (интерпретатормен) жұмыс істейді; компиляцияланбайды\n", f.name));
+    }
     let (mut funcs, cx) = lower::lower_module(&module);
     if !o.spill_all {
         for f in funcs.iter_mut() {

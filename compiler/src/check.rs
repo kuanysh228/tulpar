@@ -906,7 +906,7 @@ impl Checker {
         } else {
             Stmt { kind: StmtKind::Return(Some(body.clone())), pos: body.pos }
         };
-        let ast = FuncDef { name: name.clone(), params: vec![], ret: None, body: vec![stmt_body], pos };
+        let ast = FuncDef { name: name.clone(), params: vec![], ret: None, body: vec![stmt_body], external: false, pos };
         let declared = if rt == Ty::Null { None } else { Some(rt.clone()) };
         let mut seen = HashSet::new();
         for (n, p) in params {
@@ -2598,7 +2598,7 @@ impl Checker {
                 return err(ast.pos, format!("`{}` параметрі қайталанды", pn));
             }
         }
-        let body = self.block(&ast.body);
+        let body = if ast.external { Ok(vec![]) } else { self.block(&ast.body) };
         let body = match body {
             Ok(b) => b,
             Err(e) => {
@@ -2607,13 +2607,13 @@ impl Checker {
             }
         };
         let ret = self.cx.ret.clone().unwrap_or(Ty::None);
-        if ret != Ty::None && !terminates(&body) {
+        if ret != Ty::None && !ast.external && !terminates(&body) {
             self.cx = saved;
             return err(ast.pos, format!("`{}` функциясы барлық жолдарда мән қайтармайды", ast.name));
         }
         let cx = std::mem::replace(&mut self.cx, saved);
         self.funcs[fid].final_ret = Some(ret.clone());
-        self.funcs[fid].done = Some(TFunc { name, nparams: params.len(), locals: cx.locals, ret, body });
+        self.funcs[fid].done = Some(TFunc { name, nparams: params.len(), locals: cx.locals, ret, body, external: ast.external });
         self.funcs[fid].state = St::Done;
         Ok(())
     }
@@ -2855,7 +2855,7 @@ impl Checker {
 
         // 5) негізгі код
         let main_fid = c.funcs.len();
-        let main_ast = FuncDef { name: "<main>".into(), params: vec![], ret: None, body: vec![], pos: Pos::default() };
+        let main_ast = FuncDef { name: "<main>".into(), params: vec![], ret: None, body: vec![], external: false, pos: Pos::default() };
         c.funcs.push(FuncSlot {
             name: "<main>".into(),
             params: vec![],
@@ -2877,7 +2877,7 @@ impl Checker {
             c.stmt(s, &mut main_body)?;
         }
         let main_cx = std::mem::take(&mut c.cx);
-        c.funcs[main_fid].done = Some(TFunc { name: "<main>".into(), nparams: 0, locals: main_cx.locals, ret: Ty::None, body: main_body });
+        c.funcs[main_fid].done = Some(TFunc { name: "<main>".into(), nparams: 0, locals: main_cx.locals, ret: Ty::None, body: main_body, external: false });
         c.funcs[main_fid].state = St::Done;
 
         // 6) қалған функциялар

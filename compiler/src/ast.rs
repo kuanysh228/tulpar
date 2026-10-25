@@ -121,6 +121,8 @@ pub struct FuncDef {
     pub params: Vec<Param>,
     pub ret: Option<TypeExpr>,
     pub body: Vec<Stmt>,
+    /// `сыртқы анықта ...` — денесі жоқ, платформа (хост) іске асыратын функция
+    pub external: bool,
     pub pos: Pos,
 }
 

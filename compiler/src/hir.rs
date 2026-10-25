@@ -258,6 +258,8 @@ pub struct TFunc {
     pub locals: Vec<Local>,
     pub ret: Ty,
     pub body: Vec<TStmt>,
+    /// денесі жоқ: хост (платформа) іске асырады
+    pub external: bool,
 }
 
 #[derive(Clone, Debug)]

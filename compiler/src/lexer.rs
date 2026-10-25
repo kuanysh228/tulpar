@@ -26,11 +26,13 @@ pub enum Kw {
     Assert,
     Import,
     Lambda,
+    Extern,
 }
 
 pub fn keyword(s: &str) -> Option<Kw> {
     Some(match s {
         "анықта" => Kw::Def,
+        "сыртқы" => Kw::Extern,
         "қайтар" => Kw::Return,
         "егер" => Kw::If,
         "әйтпесе" => Kw::Else,
@@ -158,6 +160,7 @@ pub fn tok_name(t: &Tok) -> String {
 pub fn kw_text(k: Kw) -> &'static str {
     match k {
         Kw::Def => "анықта",
+        Kw::Extern => "сыртқы",
         Kw::Return => "қайтар",
         Kw::If => "егер",
         Kw::Else => "әйтпесе",

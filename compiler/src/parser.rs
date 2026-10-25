@@ -135,7 +135,12 @@ impl Parser {
         let pos = self.pos();
         match self.peek().clone() {
             Tok::Kw(Kw::Def) => {
-                let f = self.funcdef()?;
+                let f = self.funcdef(false)?;
+                Ok(Stmt { kind: StmtKind::FuncDef(f), pos })
+            }
+            Tok::Kw(Kw::Extern) => {
+                self.bump();
+                let f = self.funcdef(true)?;
                 Ok(Stmt { kind: StmtKind::FuncDef(f), pos })
             }
             Tok::Kw(Kw::Class) => self.classdef(),
@@ -359,7 +364,7 @@ impl Parser {
         Ok(TypeExpr::Name(name, pos))
     }
 
-    fn funcdef(&mut self) -> Res<FuncDef> {
+    fn funcdef(&mut self, external: bool) -> Res<FuncDef> {
         let pos = self.pos();
         self.expect_kw(Kw::Def)?;
         let (name, _) = self.ident()?;
@@ -376,8 +381,13 @@ impl Parser {
         }
         self.expect(Tok::RParen)?;
         let ret = if self.eat(&Tok::Arrow) { Some(self.type_expr()?) } else { None };
-        let body = self.block()?;
-        Ok(FuncDef { name, params, ret, body, pos })
+        let body = if external {
+            self.eat(&Tok::Newline);
+            vec![]
+        } else {
+            self.block()?
+        };
+        Ok(FuncDef { name, params, ret, body, external, pos })
     }
 
     fn classdef(&mut self) -> Res<Stmt> {
@@ -405,7 +415,7 @@ impl Parser {
                 break;
             }
             match self.peek().clone() {
-                Tok::Kw(Kw::Def) => methods.push(self.funcdef()?),
+                Tok::Kw(Kw::Def) => methods.push(self.funcdef(false)?),
                 Tok::Kw(Kw::Pass) => {
                     self.bump();
                     self.eat(&Tok::Newline);
