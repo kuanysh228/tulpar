@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" alt="Tulpar (Тұлпар) — қазақ синтаксисі бар, нативті кодқа компиляцияланатын бағдарламалау тілі" width="560">
+</p>
+
 # Tulpar (Тұлпар)
 
 [English](README.md) · [Русский](README.ru.md) · **Қазақша**

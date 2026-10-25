@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" alt="Tulpar — язык программирования с казахским синтаксисом, компилируемый в нативный код" width="560">
+</p>
+
 # Tulpar (Тұлпар)
 
 [English](README.md) · **Русский** · [Қазақша](README.kk.md)

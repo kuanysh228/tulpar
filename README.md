@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" alt="Tulpar — a programming language with Kazakh syntax that compiles to native code" width="560">
+</p>
+
 # Tulpar (Тұлпар)
 
 **English** · [Русский](README.ru.md) · [Қазақша](README.kk.md)
