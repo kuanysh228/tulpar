@@ -168,6 +168,27 @@ f-strings: `f"{x}"` or `ф"{x}"`; formatting: `{x:.2f}`, `{x:8}`, `{s:>10}`, `{s
 `файл_оқы(path)`, `файл_жаз(path, text)`, `файл_қос(path, text)`, `файл_бар(path)`, `файл_жой(path)`, `файл_ауыстыр(old, new)` (atomic rename), `қалта_жаса(path)` (mkdir), `желі_күту(fd, ms)` (socket read/write timeout: `желі_оқы` then returns `""`), `аргтар()`,
 `тыңда`, `тыңда_локал`, `қабылда`, `қосыл`, `желі_оқы`, `желі_жаз`, `желі_жап`, `уақыт()`, `кездейсоқ()`, `кездейсоқ_аралық(a, b)`, `тұқым(n)`, `шығу(code)`, `қате(message)`, `тексер cond, message`.
 
+## Embedding (interpreter)
+
+Besides compiling to native code, Tulpar can run inside another program (the library crate `tulpar`):
+
+```bash
+tulpar interp file.tlp            # run with the built-in interpreter
+```
+
+```rust
+let prog = tulpar::loader::load("config/main.tlp")?;
+let module = tulpar::check::Checker::check_program(&prog)?;
+let mut it = tulpar::interp::Interp::new(module, Box::new(MyHost));   // MyHost: impl tulpar::interp::Host
+it.run_main()?;                                                       // top-level code, once
+let r = it.call("есепте", vec![Value::Int(5)])?;                      // call a Tulpar function from Rust
+```
+
+* `сыртқы анықта аты(a: бүтін) -> мәтін` declares a function implemented by the host (`Host::call`); programs that use it cannot be compiled to native code.
+* The interpreter has no file, network or raw-memory access (`файл_*`, `тыңда`, `қолмен:` are errors), limits the number of steps (`max_steps`) and recursion depth (`max_depth`), and reports errors as `Result` with a call trace, so the host can roll back a transaction.
+* Host code can create and read class instances (`class_id`, `new_object`, `get_field`, `set_field`).
+* Output of interpreted programs matches the compiled output (`tests/run_tests.sh` runs every test in both modes).
+
 ## Memory management
 
 **Default: automatic (GC).** Strings, lists, dicts, classes and tuples live in the GC heap; nothing needs to be freed.

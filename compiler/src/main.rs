@@ -12,6 +12,7 @@ Tulpar — қазақ синтаксисі бар компиляцияланат
   tulpar build файл.tlp [-o шығыс]         орындалатын файл жасау
   tulpar asm   файл.tlp [-o файл.s]        ассемблер кодын шығару
   tulpar check файл.tlp                    тек синтаксис пен типтерді тексеру
+  tulpar interp файл.tlp                   интерпретатормен іске қосу (компиляциясыз; ендіру режимі)
 
 Опциялар:
   -O0        регистр бөлгішсіз (барлығы стекте) — түзету үшін
@@ -148,6 +149,27 @@ fn main() {
             let out = output.unwrap_or_else(|| Path::new(&file).with_extension("").to_string_lossy().into_owned());
             build(&file, Path::new(&out), &opts).unwrap_or_else(|e| fail(e));
             println!("{}", out);
+        }
+        "interp" => {
+            let prog = loader::load(&file).unwrap_or_else(|d| fail(d.render()));
+            let module = check::Checker::check_program(&prog).unwrap_or_else(|d| fail(d.render()));
+            let files = tulpar::diag::file_names();
+            // терең рекурсия үшін үлкен стекті ағында
+            let h = std::thread::Builder::new()
+                .stack_size(1 << 30)
+                .spawn(move || {
+                    let mut it = tulpar::interp::Interp::new(module, Box::new(tulpar::interp::NoHost));
+                    it.set_file_names(files);
+                    it.max_depth = 20000;
+                    it.max_steps = u64::MAX;
+                    it.run_main().map_err(|e| e.render())
+                })
+                .unwrap();
+            match h.join() {
+                Ok(Ok(())) => {}
+                Ok(Err(msg)) => fail(msg),
+                Err(_) => fail("ішкі қате: интерпретатор құлады".into()),
+            }
         }
         "run" => {
             let out = std::env::temp_dir().join(format!("tulpar-run-{}", std::process::id()));
