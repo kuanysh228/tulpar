@@ -158,7 +158,7 @@ fn main() {
             let h = std::thread::Builder::new()
                 .stack_size(1 << 30)
                 .spawn(move || {
-                    let mut it = tulpar::interp::Interp::new(module, Box::new(tulpar::interp::NoHost));
+                    let mut it = tulpar::interp::Interp::new(module, std::rc::Rc::new(tulpar::interp::NoHost));
                     it.set_file_names(files);
                     it.max_depth = 20000;
                     it.max_steps = u64::MAX;

@@ -10,7 +10,7 @@ struct TestHost {
 }
 
 impl Host for TestHost {
-    fn call(&mut self, name: &str, args: Vec<Value>) -> Result<Value, String> {
+    fn call(&self, _it: &mut Interp, name: &str, args: Vec<Value>) -> Result<Value, String> {
         match name {
             "қос_санды" => Ok(Value::Int(args[0].as_int() + args[1].as_int())),
             "хабар" => {
@@ -21,7 +21,7 @@ impl Host for TestHost {
             _ => Err(format!("белгісіз: {}", name)),
         }
     }
-    fn print(&mut self, text: &str) {
+    fn print(&self, text: &str) {
         self.log.borrow_mut().push(text.trim_end().to_string());
     }
 }
@@ -34,7 +34,7 @@ fn load(src: &str) -> (Interp, Rc<RefCell<Vec<String>>>) {
     let prog = tulpar::loader::load(path.to_str().unwrap()).unwrap_or_else(|d| panic!("{}", d.render()));
     let module = tulpar::check::Checker::check_program(&prog).unwrap_or_else(|d| panic!("{}", d.render()));
     let log = Rc::new(RefCell::new(vec![]));
-    let mut it = Interp::new(module, Box::new(TestHost { log: log.clone() }));
+    let mut it = Interp::new(module, Rc::new(TestHost { log: log.clone() }));
     it.run_main().unwrap();
     (it, log)
 }
@@ -91,4 +91,36 @@ fn file_access_is_denied() {
     let (mut it, _) = load("анықта оқы_():\n    жаз(файл_оқы(\"/etc/passwd\"))\n");
     let e = it.call("оқы_", vec![]).unwrap_err();
     assert!(e.msg.contains("қолжетімсіз"));
+}
+
+struct ReHost;
+
+impl Host for ReHost {
+    fn call(&self, it: &mut Interp, name: &str, args: Vec<Value>) -> Result<Value, String> {
+        // хост интерпретаторға қайта кіреді: оқиға функциясын шақырады
+        match name {
+            "жазу" => {
+                let r = it.call("оқиға", vec![args[0].clone()]).map_err(|e| e.msg)?;
+                Ok(Value::Int(r.as_int() + 1))
+            }
+            _ => Err("белгісіз".into()),
+        }
+    }
+}
+
+#[test]
+fn host_can_reenter_interpreter() {
+    let dir = std::env::temp_dir().join(format!("tulpar-interp-reenter-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("m.tlp");
+    std::fs::write(
+        &path,
+        "сыртқы анықта жазу(x: бүтін) -> бүтін\nанықта оқиға(x: бүтін) -> бүтін:\n    қайтар x * 10\nанықта жұмыс() -> бүтін:\n    қайтар жазу(4)\n",
+    )
+    .unwrap();
+    let prog = tulpar::loader::load(path.to_str().unwrap()).unwrap();
+    let module = tulpar::check::Checker::check_program(&prog).unwrap();
+    let mut it = Interp::new(module, Rc::new(ReHost));
+    it.run_main().unwrap();
+    assert_eq!(it.call("жұмыс", vec![]).unwrap().as_int(), 41);
 }

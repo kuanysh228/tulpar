@@ -179,13 +179,14 @@ tulpar interp file.tlp            # run with the built-in interpreter
 ```rust
 let prog = tulpar::loader::load("config/main.tlp")?;
 let module = tulpar::check::Checker::check_program(&prog)?;
-let mut it = tulpar::interp::Interp::new(module, Box::new(MyHost));   // MyHost: impl tulpar::interp::Host
+let mut it = tulpar::interp::Interp::new(module, std::rc::Rc::new(MyHost));   // MyHost: impl tulpar::interp::Host (call(&self, it, name, args))
 it.run_main()?;                                                       // top-level code, once
 let r = it.call("есепте", vec![Value::Int(5)])?;                      // call a Tulpar function from Rust
 ```
 
 * `сыртқы анықта аты(a: бүтін) -> мәтін` declares a function implemented by the host (`Host::call`); programs that use it cannot be compiled to native code.
 * The interpreter has no file, network or raw-memory access (`файл_*`, `тыңда`, `қолмен:` are errors), limits the number of steps (`max_steps`) and recursion depth (`max_depth`), and reports errors as `Result` with a call trace, so the host can roll back a transaction.
+* The host receives `&mut Interp` in every call, so it may re-enter the interpreter (e.g. run event handlers of a record being saved).
 * Host code can create and read class instances (`class_id`, `new_object`, `get_field`, `set_field`).
 * Output of interpreted programs matches the compiled output (`tests/run_tests.sh` runs every test in both modes).
 

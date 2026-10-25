@@ -250,10 +250,12 @@ fn rt<T>(msg: impl Into<String>) -> R<T> {
 
 // ---------------------------------------------------------------------------------------- хост
 
+/// Хост `&self` арқылы шақырылады (ішкі күйі `RefCell` ішінде), сондықтан `it` арқылы интерпретаторға
+/// қайта кіруге болады (`it.call(..)`): мысалы, жазу оқиғаларын орындау.
 pub trait Host {
     /// `сыртқы анықта` функциясын шақыру. Қате — мәтін (бағдарлама тоқтайды).
-    fn call(&mut self, name: &str, args: Vec<Value>) -> Result<Value, String>;
-    fn print(&mut self, text: &str) {
+    fn call(&self, it: &mut Interp, name: &str, args: Vec<Value>) -> Result<Value, String>;
+    fn print(&self, text: &str) {
         print!("{}", text);
     }
 }
@@ -262,7 +264,7 @@ pub trait Host {
 pub struct NoHost;
 
 impl Host for NoHost {
-    fn call(&mut self, name: &str, _args: Vec<Value>) -> Result<Value, String> {
+    fn call(&self, _it: &mut Interp, name: &str, _args: Vec<Value>) -> Result<Value, String> {
         Err(format!("`сыртқы` функция `{}` хостта жоқ", name))
     }
 }
@@ -284,7 +286,7 @@ struct Frame {
 pub struct Interp {
     module: Rc<Module>,
     globals: Vec<Value>,
-    host: Box<dyn Host>,
+    host: Rc<dyn Host>,
     vtables: HashMap<String, usize>,
     names: HashMap<String, FuncId>,
     files: Vec<String>,
@@ -405,7 +407,7 @@ fn floor_mod(a: i64, b: i64) -> i64 {
 }
 
 impl Interp {
-    pub fn new(module: Module, host: Box<dyn Host>) -> Interp {
+    pub fn new(module: Module, host: Rc<dyn Host>) -> Interp {
         let mut vtables = HashMap::new();
         for (i, (n, _)) in module.vtables.iter().enumerate() {
             vtables.insert(n.clone(), i);
@@ -435,7 +437,7 @@ impl Interp {
         self.files = files;
     }
 
-    pub fn set_host(&mut self, host: Box<dyn Host>) {
+    pub fn set_host(&mut self, host: Rc<dyn Host>) {
         self.host = host;
     }
 
@@ -458,8 +460,9 @@ impl Interp {
     pub fn call(&mut self, name: &str, args: Vec<Value>) -> R<Value> {
         match self.func_id(name) {
             Some(id) => {
-                self.steps = 0;
-                self.depth = 0;
+                if self.depth == 0 {
+                    self.steps = 0; // сыртқы шақыруда ғана қадам шегі жаңарады, ішкі (қайта кіру) шақыруда жоқ
+                }
                 self.call_id(id, args)
             }
             None => rt(format!("функция табылмады: {}", name)),
@@ -512,7 +515,8 @@ impl Interp {
         let m = Rc::clone(&self.module);
         let f = &m.funcs[fid];
         if f.external {
-            return match self.host.call(&f.name, args) {
+            let host = Rc::clone(&self.host);
+            return match host.call(self, &f.name, args) {
                 Ok(v) => Ok(v),
                 Err(e) => rt(e),
             };
