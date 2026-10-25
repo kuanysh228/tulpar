@@ -12,6 +12,7 @@ const BUILTIN_NAMES: &[&str] = &[
     "босат", "жина", "жад", "қате", "аралық", "тізім", "сөздік", "аргтар", "файл_оқы", "файл_жаз", "файл_қос", "уақыт", "кездейсоқ",
     "кездейсоқ_аралық", "тұқым", "шығу", "синус", "косинус", "тангенс", "арктангенс", "арктангенс2", "экспонента", "логарифм",
     "логарифм10", "қосынды", "нөмірле", "мысал", "түрлендір", "жиын", "код", "таңба", "тыңда", "тыңда_локал", "қабылда", "қосыл", "желі_оқы", "желі_жаз", "желі_жап",
+    "желі_күту", "файл_бар", "файл_жой", "файл_ауыстыр", "қалта_жаса",
 ];
 
 #[derive(PartialEq, Clone, Copy)]
@@ -1685,6 +1686,29 @@ impl Checker {
                 let p = self.arg(&args[0], Some(&Ty::Str))?;
                 let t = self.arg(&args[1], Some(&Ty::Str))?;
                 Ok(texpr(TK::Builtin(Bi::FileWrite(name == "файл_қос"), vec![p, t]), Ty::None))
+            }
+            "файл_бар" => {
+                self.arg_count(name, args, 1, 1, pos)?;
+                let p = self.arg(&args[0], Some(&Ty::Str))?;
+                Ok(texpr(TK::Builtin(Bi::FileExists, vec![p]), Ty::Bool))
+            }
+            "файл_жой" | "қалта_жаса" => {
+                self.arg_count(name, args, 1, 1, pos)?;
+                let p = self.arg(&args[0], Some(&Ty::Str))?;
+                let bi = if name == "файл_жой" { Bi::FileDelete } else { Bi::MakeDir };
+                Ok(texpr(TK::Builtin(bi, vec![p]), Ty::None))
+            }
+            "файл_ауыстыр" => {
+                self.arg_count(name, args, 2, 2, pos)?;
+                let a = self.arg(&args[0], Some(&Ty::Str))?;
+                let b = self.arg(&args[1], Some(&Ty::Str))?;
+                Ok(texpr(TK::Builtin(Bi::FileRename, vec![a, b]), Ty::None))
+            }
+            "желі_күту" => {
+                self.arg_count(name, args, 2, 2, pos)?;
+                let fd = self.arg(&args[0], Some(&Ty::Int))?;
+                let ms = self.arg(&args[1], Some(&Ty::Int))?;
+                Ok(texpr(TK::Builtin(Bi::NetTimeout, vec![fd, ms]), Ty::None))
             }
             "уақыт" => {
                 self.arg_count(name, args, 0, 0, pos)?;

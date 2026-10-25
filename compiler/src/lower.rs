@@ -1270,6 +1270,28 @@ impl<'a> FB<'a> {
                 self.callv("tlp_file_write", &[p, t, a]);
                 return None;
             }
+            Bi::FileExists => {
+                let p = self.val(&args[0]);
+                self.calli("tlp_file_exists", &[p])
+            }
+            Bi::FileDelete | Bi::MakeDir => {
+                let p = self.val(&args[0]);
+                let f = if matches!(bi, Bi::FileDelete) { "tlp_file_delete" } else { "tlp_make_dir" };
+                self.callv(f, &[p]);
+                return None;
+            }
+            Bi::FileRename => {
+                let a = self.val(&args[0]);
+                let b = self.val(&args[1]);
+                self.callv("tlp_file_rename", &[a, b]);
+                return None;
+            }
+            Bi::NetTimeout => {
+                let fd = self.val(&args[0]);
+                let ms = self.val(&args[1]);
+                self.callv("tlp_net_timeout", &[fd, ms]);
+                return None;
+            }
             Bi::Time => self.callf("tlp_time", &[]),
             Bi::Rand => self.callf("tlp_rand", &[]),
             Bi::RandRange => {

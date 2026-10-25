@@ -147,6 +147,16 @@ pub enum Bi {
     NetRead,
     NetWrite,
     NetClose,
+    /// файл_бар(жол) -> логика
+    FileExists,
+    /// файл_жой(жол)
+    FileDelete,
+    /// файл_ауыстыр(ескі, жаңа)
+    FileRename,
+    /// қалта_жаса(жол)
+    MakeDir,
+    /// желі_күту(fd, миллисекунд)
+    NetTimeout,
 }
 
 #[derive(Clone, Debug)]

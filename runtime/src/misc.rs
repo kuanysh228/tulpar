@@ -80,6 +80,47 @@ pub unsafe extern "C" fn tlp_file_write(path: Str, text: Str, append: i64) {
     sys3(3, fd as usize, 0, 0);
 }
 
+/// Файл бар ма (access F_OK).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tlp_file_exists(path: Str) -> i64 {
+    let p = cpath(path);
+    let r = sys3(21, p.bytes().as_ptr() as usize, 0, 0);
+    p.discard();
+    (r == 0) as i64
+}
+
+/// Файлды жояды (unlink); жоқ болса — үнсіз.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tlp_file_delete(path: Str) {
+    let p = cpath(path);
+    sys3(87, p.bytes().as_ptr() as usize, 0, 0);
+    p.discard();
+}
+
+/// Файлды атомарлы түрде қайта атайды (rename); сәтсіз болса — қате.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tlp_file_rename(from: Str, to: Str) {
+    let a = cpath(from);
+    let b = cpath(to);
+    let r = sys3(82, a.bytes().as_ptr() as usize, b.bytes().as_ptr() as usize, 0);
+    a.discard();
+    b.discard();
+    if r < 0 {
+        let mut m = Sb::new();
+        m.push_bytes("файлды ауыстыру мүмкін емес: ".as_bytes());
+        m.push_bytes(bytes(from));
+        fatal(m.bytes());
+    }
+}
+
+/// Қалта жасайды (mkdir 0755); бар болса — үнсіз.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tlp_make_dir(path: Str) {
+    let p = cpath(path);
+    sys3(83, p.bytes().as_ptr() as usize, 0o755, 0);
+    p.discard();
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn tlp_time() -> f64 {
     let mut ts = [0i64; 2];

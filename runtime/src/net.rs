@@ -156,3 +156,14 @@ pub unsafe extern "C" fn tlp_net_write(fd: i64, text: Str) {
 pub unsafe extern "C" fn tlp_net_close(fd: i64) {
     sys3(SYS_CLOSE, fd as usize, 0, 0);
 }
+
+/// Сокеттің оқу/жазу күту уақытын (миллисекунд) белгілейді. 0 — шексіз.
+/// Күту біткенде `желі_оқы` бос мәтін қайтарады (қосылым жабылғандай).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tlp_net_timeout(fd: i64, ms: i64) {
+    let tv: [i64; 2] = [ms / 1000, (ms % 1000) * 1000];
+    // SOL_SOCKET=1, SO_RCVTIMEO=20, SO_SNDTIMEO=21
+    for opt in [20usize, 21usize] {
+        sys6(SYS_SETSOCKOPT, fd as usize, 1, opt, tv.as_ptr() as usize, 16, 0);
+    }
+}
