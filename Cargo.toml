@@ -1,0 +1,16 @@
+[workspace]
+members = ["compiler", "runtime"]
+resolver = "3"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = 3
+debug = false
+
+[profile.dev.package.tulpar-rt]
+opt-level = 3
+overflow-checks = false
+debug-assertions = false

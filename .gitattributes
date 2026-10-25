@@ -1,0 +1,10 @@
+# GitHub Linguist: .tlp файлдары Tulpar тілінде.
+# ЕСКЕРТУ: Linguist тек өзі білетін тілдерді көрсетеді. "Tulpar" тілі github-linguist/linguist
+# репозиторийіне қосылғанға дейін статистикада көрінбейді (қосу үшін linguist/SUBMIT.md қараңыз).
+*.tlp linguist-language=Tulpar
+*.tlp linguist-detectable=true
+# есептелмейтін файлдар
+bench/*.c linguist-vendored
+bench/*.rs linguist-vendored
+bench/*.py linguist-vendored
+tests/**/*.out linguist-generated

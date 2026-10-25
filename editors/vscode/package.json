@@ -1,0 +1,35 @@
+{
+  "name": "tulpar",
+  "displayName": "Tulpar (Тұлпар)",
+  "description": "Tulpar тілі (.tlp) үшін синтаксис бояуы",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "tulpar",
+        "aliases": [
+          "Tulpar",
+          "tulpar"
+        ],
+        "extensions": [
+          ".tlp"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "tulpar",
+        "scopeName": "source.tulpar",
+        "path": "./syntaxes/tulpar.tmLanguage.json"
+      }
+    ]
+  },
+  "publisher": "tulpar"
+}

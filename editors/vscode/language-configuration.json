@@ -1,0 +1,12 @@
+{
+  "comments": { "lineComment": "#" },
+  "brackets": [["(", ")"], ["[", "]"], ["{", "}"]],
+  "autoClosingPairs": [
+    { "open": "(", "close": ")" }, { "open": "[", "close": "]" }, { "open": "{", "close": "}" },
+    { "open": "\"", "close": "\"", "notIn": ["string"] }, { "open": "'", "close": "'", "notIn": ["string"] }
+  ],
+  "indentationRules": {
+    "increaseIndentPattern": "^\\s*(анықта|класс|егер|әйтпесе|әзірше|әр|қолмен)\\b.*:\\s*$",
+    "decreaseIndentPattern": "^\\s*(әйтпесе)\\b.*:\\s*$"
+  }
+}

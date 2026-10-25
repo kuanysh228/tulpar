@@ -1,0 +1,10 @@
+[package]
+name = "tulpar-rt"
+version = "0.1.0"
+edition = "2024"
+description = "Tulpar runtime: GC, strings, lists, dicts, I/O (no libc)"
+license = "MIT"
+
+[lib]
+name = "tulpar_rt"
+crate-type = ["staticlib"]

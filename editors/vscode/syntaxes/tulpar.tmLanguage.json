@@ -1,0 +1,38 @@
+{
+  "name": "Tulpar",
+  "scopeName": "source.tulpar",
+  "patterns": [
+    { "include": "#comment" }, { "include": "#fstring" }, { "include": "#string" },
+    { "include": "#number" }, { "include": "#keyword" }, { "include": "#constant" },
+    { "include": "#type" }, { "include": "#builtin" }, { "include": "#funcdef" }, { "include": "#classdef" }
+  ],
+  "repository": {
+    "comment": { "match": "#.*$", "name": "comment.line.number-sign.tulpar" },
+    "string": {
+      "patterns": [
+        { "begin": "\"\"\"", "end": "\"\"\"", "name": "string.quoted.triple.tulpar" },
+        { "begin": "\"", "end": "\"", "name": "string.quoted.double.tulpar", "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.tulpar" }] },
+        { "begin": "'", "end": "'", "name": "string.quoted.single.tulpar", "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.tulpar" }] }
+      ]
+    },
+    "fstring": {
+      "patterns": [
+        { "begin": "(?<![\\p{L}\\d_])[фf]\"", "end": "\"", "name": "string.quoted.double.tulpar", "patterns": [
+          { "match": "\\{\\{|\\}\\}", "name": "constant.character.escape.tulpar" },
+          { "begin": "\\{", "end": "\\}", "name": "meta.embedded.expression.tulpar", "patterns": [{ "include": "$self" }] }
+        ] }
+      ]
+    },
+    "number": { "match": "\\b(0[xX][0-9a-fA-F_]+|0[bB][01_]+|0[oO][0-7_]+|\\d[\\d_]*(\\.\\d[\\d_]*)?([eE][+-]?\\d+)?)\\b", "name": "constant.numeric.tulpar" },
+    "keyword": {
+      "patterns": [
+        { "match": "(?<![\\p{L}\\d_])(анықта|қайтар|егер|әйтпесе|әзірше|әр|ішінде|тоқта|жалғастыр|өткіз|және|немесе|емес|класс|глобал|қолмен|тексер|лямбда|импорт)(?![\\p{L}\\d_])", "name": "keyword.control.tulpar" }
+      ]
+    },
+    "constant": { "match": "(?<![\\p{L}\\d_])(рас|жалған|жоқ|ПИ|Е)(?![\\p{L}\\d_])", "name": "constant.language.tulpar" },
+    "type": { "match": "(?<![\\p{L}\\d_])(бүтін|нақты|логика|мәтін|байт|тізім|сөздік|жиын)(?![\\p{L}\\d_])", "name": "storage.type.tulpar" },
+    "builtin": { "match": "(?<![\\p{L}\\d_])(жаз|көрсет|оқы|ұзындық|абс|мин|макс|түбір|еден|төбе|синус|косинус|тангенс|арктангенс|арктангенс2|экспонента|логарифм|логарифм10|қосынды|аралық|нөмірле|бөл|босат|жина|жад|қате|шығу|аргтар|файл_оқы|файл_жаз|файл_қос|уақыт|кездейсоқ|кездейсоқ_аралық|тұқым|мысал|түрлендір|код|таңба|тыңда|қабылда|қосыл|желі_оқы|желі_жаз|желі_жап)(?![\\p{L}\\d_])", "name": "support.function.builtin.tulpar" },
+    "funcdef": { "match": "(анықта)\\s+([\\p{L}_][\\p{L}\\d_]*)", "captures": { "1": { "name": "keyword.control.tulpar" }, "2": { "name": "entity.name.function.tulpar" } } },
+    "classdef": { "match": "(класс)\\s+([\\p{L}_][\\p{L}\\d_]*)", "captures": { "1": { "name": "keyword.control.tulpar" }, "2": { "name": "entity.name.type.class.tulpar" } } }
+  }
+}

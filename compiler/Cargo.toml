@@ -1,0 +1,10 @@
+[package]
+name = "tulpar"
+version = "0.1.0"
+edition = "2024"
+description = "Tulpar — қазақ синтаксисі бар компиляцияланатын бағдарламалау тілі"
+license = "MIT"
+
+[[bin]]
+name = "tulpar"
+path = "src/main.rs"
