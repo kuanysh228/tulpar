@@ -1,6 +1,6 @@
 [package]
 name = "tulpar-kernel"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 description = "Tulpar ядро рантаймы: x86-64 жалаң темірде (bare metal) жұмыс істейді, ОЖ мен libc жоқ"
 license = "MIT"
