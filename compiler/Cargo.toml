@@ -1,6 +1,6 @@
 [package]
 name = "tulpar"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "Tulpar — қазақ синтаксисі бар компиляцияланатын бағдарламалау тілі"
 license = "MIT"

@@ -8,7 +8,33 @@ tulpar run   программа.tlp --target windows      # соберёт .exe 
 Компилятор кросс-компилирует из Linux. Никаких дополнительных инструментов (mingw, MSVC, lld) не нужно: используются те же
 `as` и `ld`, а PE-файл (заголовки, секции, таблица импорта) записывает сам компилятор (`compiler/src/pe.rs`).
 Итог — обычный консольный `.exe` для Windows 10/11 x64 (проверялось в wine), без зависимостей кроме `kernel32.dll` и,
-если используется сеть, `ws2_32.dll`.
+если используется сеть, `ws2_32.dll` (а для `https://` — `secur32.dll` и `crypt32.dll`, см. [docs/networking.md](networking.md)).
+
+## Сам компилятор как `.exe`
+
+Выше речь про программы на Tulpar. Сам компилятор (`tulpar`) — обычная программа на Rust со `std`, поэтому
+собирается в Windows `.exe` не своим PE-писателем, а штатной кросс-компиляцией Rust:
+
+```bash
+rustup target add x86_64-pc-windows-gnu    # один раз
+sudo pacman -S mingw-w64-gcc               # линковщик для этой цели (Arch; в других дистрибутивах — свой пакет)
+
+cd tulpar
+rustup run stable cargo build --release -p tulpar --target x86_64-pc-windows-gnu
+# -> target/x86_64-pc-windows-gnu/release/tulpar.exe
+```
+
+Для раздачи положите рядом с `tulpar.exe` файлы `libtulpar_rt.a`, `libtulpar_win.a`, `libtulpar_kernel.a`
+(из `target/release/`, Linux-сборки — формат `.a` переносимый) — `tulpar.exe` находит их по относительному пути
+рядом с собой, как и на Linux.
+
+На самой Windows-машине, где будет запускаться этот `tulpar.exe`, всё равно нужны **`as` и `ld`** (GNU binutils) —
+компилятор сам ничего не ассемблирует и не линкует, он всегда зовёт их внешним процессом, независимо от платформы.
+Проще всего — через [MSYS2](https://www.msys2.org/): `pacman -S mingw-w64-x86_64-binutils` и добавить его `bin`
+в `PATH`. Без этого `tulpar.exe build` будет падать с ошибкой `` `as` іске қосылмады ``.
+
+`tulpar.exe`, собранный так, по умолчанию считает целью Windows (можно явно переключить на `--target linux`,
+если на той же Windows-машине почему-то нужен Linux ELF) и запускает собранные программы напрямую, без `wine`.
 
 ## Как это устроено
 

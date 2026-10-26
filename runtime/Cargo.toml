@@ -1,6 +1,6 @@
 [package]
 name = "tulpar-rt"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "Tulpar runtime: GC, strings, lists, dicts, I/O (no libc)"
 license = "MIT"

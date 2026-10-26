@@ -187,7 +187,8 @@ fn main() {
     let cmd = args[0].as_str();
     let mut file = None;
     let mut output: Option<String> = None;
-    let mut opts = Opts { spill_all: false, dump_ir: false, kernel, windows: false };
+    // Windows-та жиналған `tulpar.exe` әдепкіде `.exe` шығарады (Linux-ты мақсаттау үшін `--target linux`)
+    let mut opts = Opts { spill_all: false, dump_ir: false, kernel, windows: cfg!(windows) };
     let mut rest: Vec<String> = Vec::new();
     let mut gui = false;
     let mut mem = "128M".to_string();
@@ -326,7 +327,9 @@ fn main() {
                 Err(e) => fail(format!("қате: `qemu-system-x86_64` іске қосылмады: {} (QEMU орнатылған ба?)", e)),
             }
         }
-        "run" if opts.windows => {
+        // Windows-тың өз `tulpar.exe`-сі жиналған .exe-ні тікелей іске қосады; басқа хост (мыс. Linux)
+        // кросс-компиляциялағанда нәтижені тексеру үшін `wine` қолданады.
+        "run" if opts.windows && !cfg!(windows) => {
             let out = std::env::temp_dir().join(format!("tulpar-run-{}.exe", std::process::id()));
             build(&file, &out, &opts).unwrap_or_else(|e| fail(e));
             let status = Command::new("wine").arg(&out).args(&rest).status();
@@ -337,7 +340,8 @@ fn main() {
             }
         }
         "run" => {
-            let out = std::env::temp_dir().join(format!("tulpar-run-{}", std::process::id()));
+            let ext = if opts.windows { ".exe" } else { "" };
+            let out = std::env::temp_dir().join(format!("tulpar-run-{}{}", std::process::id(), ext));
             build(&file, &out, &opts).unwrap_or_else(|e| fail(e));
             let status = Command::new(&out).args(&rest).status();
             let _ = std::fs::remove_file(&out);
