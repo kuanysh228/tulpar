@@ -2,6 +2,7 @@
 #![no_std]
 #![allow(unsafe_op_in_unsafe_fn, static_mut_refs, clippy::missing_safety_doc)]
 
+pub mod common;
 pub mod dict;
 pub mod fmt;
 pub mod gc;

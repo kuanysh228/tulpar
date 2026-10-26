@@ -7,5 +7,9 @@ name = "tulpar"
 version = "0.1.1"
 
 [[package]]
+name = "tulpar-kernel"
+version = "0.1.1"
+
+[[package]]
 name = "tulpar-rt"
 version = "0.1.1"

@@ -1586,7 +1586,7 @@ impl Interp {
                 }
                 Value::dict(r)
             }
-            Bi::Alloc(_) | Bi::Free => return unavailable(),
+            Bi::Alloc(_) | Bi::Free | Bi::PtrCast | Bi::Hw(..) => return unavailable(),
             Bi::Gc => Value::Null,
             Bi::GcHeap => Value::Int(0),
             Bi::Panic => return rt(a[0].as_str().to_string()),

@@ -52,7 +52,7 @@ static mut SPAN_COUNT: u32 = 0;
 static mut SPAN_FREE: u32 = 0;
 static mut FREE_RUNS: *mut [usize; 2] = ptr::null_mut();
 static mut FREE_RUN_COUNT: usize = 0;
-const FREE_RUN_CAP: usize = 1 << 20;
+const FREE_RUN_CAP: usize = GC_FREE_RUN_CAP;
 static mut FREE_PAGES: usize = 0;
 
 /// [0] — GC, scan; [1] — GC, noscan; [2] — қолмен (көрсеткіштерсіз); [3] — қолмен (GC сілтемелері бар: түбір)
@@ -73,13 +73,13 @@ static mut GLOBALS_HI: usize = 0;
 
 static mut MARK_STACK: *mut usize = ptr::null_mut();
 static mut MARK_SP: usize = 0;
-const MARK_CAP: usize = 1 << 27;
+const MARK_CAP: usize = GC_MARK_CAP;
 
 pub unsafe fn init(globals_lo: usize, globals_hi: usize) {
     unsafe {
-        let mut size = 1usize << 36;
+        let mut size = os_heap_hint().min(GC_HEAP_MAX);
         let mut base = 0;
-        while size >= (1 << 26) {
+        while size >= GC_HEAP_MIN {
             base = os_map(size, true);
             if base != 0 {
                 break;
@@ -182,7 +182,7 @@ unsafe fn free_pages(addr: usize, n: usize) {
         // үйіндінің ұшына тірелсе — ОЖ-ге қайтарамыз
         if HEAP_START + ((start + len) << PAGE_SHIFT) == HEAP_TOP {
             let a = HEAP_START + (start << PAGE_SHIFT);
-            sys3(28, a, len << PAGE_SHIFT, 4); // MADV_DONTNEED: бет нөлге айналады
+            os_release(a, len << PAGE_SHIFT); // беттер нөлге айналады
             HEAP_TOP = a;
             FREE_PAGES -= len;
             return;

@@ -254,6 +254,22 @@ failed `тексер`, `қате("…")`, `ал` on an empty list.
 
 (Small inlined functions may appear under their caller's name.)
 
+## Writing an OS
+
+`tulpar os build|run|iso file.tlp` compiles a program into a **bare-metal x86-64 kernel** (Multiboot: GRUB, `qemu -kernel`, ISO/USB)
+instead of a Linux process. The whole language works in the kernel, including strings, lists, dicts, classes and the garbage collector,
+and `жаз` prints to COM1 and the VGA text screen. Inside a `қолмен:` block there are built-ins for hardware: I/O ports
+(`порт_оқы8/16/32`, `порт_жаз8/16/32`), volatile MMIO (`оқы8..64`, `жаз8..64`), `мекен(T, address)` / `мекенжай(p)` to turn numbers into
+pointers and back, control/model-specific registers, `cpuid`, `hlt`/`sti`/`cli`, and interrupt handlers written in Tulpar
+(`үзіліс_орнату(vector, function)`).
+
+```bash
+tulpar os run examples/os/shell.tlp        # an interactive shell kernel in QEMU (COM1 in your terminal)
+tulpar os iso examples/os/timer.tlp -o os.iso
+```
+
+Details, the full list of built-ins and limitations: [docs/os.md](docs/os.md). Needs `qemu-system-x86_64` (for `run`), binutils, `grub-mkrescue` (for `iso`).
+
 ## Project layout
 
 ```
@@ -269,6 +285,8 @@ compiler/src/
 runtime/src/    (no_std, no libc; raw syscalls)
   gc.rs         memory: spans, size classes, mark-sweep, manual allocator
   str.rs list.rs dict.rs fmt.rs math.rs misc.rs net.rs sys.rs (+ line-table stack traces)
+kernel/         bare-metal runtime for `tulpar os` (no_std): Multiboot boot, GDT/IDT/PIC, COM1+VGA console; reuses gc/str/list/dict from runtime/
+  kernel.ld     linker script (kernel at 1 MiB)
 editors/vscode/ VS Code syntax highlighting for .tlp
 tools/fuzz.py   differential fuzzer
 tests/          *.tlp + *.out (expected output), errors/ (error tests), run_tests.sh

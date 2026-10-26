@@ -12,8 +12,52 @@ const BUILTIN_NAMES: &[&str] = &[
     "босат", "жина", "жад", "қате", "аралық", "тізім", "сөздік", "аргтар", "файл_оқы", "файл_жаз", "файл_қос", "уақыт", "кездейсоқ",
     "кездейсоқ_аралық", "тұқым", "шығу", "синус", "косинус", "тангенс", "арктангенс", "арктангенс2", "экспонента", "логарифм",
     "логарифм10", "қосынды", "нөмірле", "мысал", "түрлендір", "жиын", "код", "таңба", "тыңда", "тыңда_локал", "қабылда", "қосыл", "желі_оқы", "желі_жаз", "желі_жап",
-    "желі_күту", "файл_бар", "файл_жой", "файл_ауыстыр", "қалта_жаса",
+    "желі_күту", "файл_бар", "файл_жой", "файл_ауыстыр", "қалта_жаса", "мекен", "мекенжай",
+    "порт_оқы8", "порт_оқы16", "порт_оқы32", "порт_жаз8", "порт_жаз16", "порт_жаз32", "оқы8", "оқы16", "оқы32", "оқы64", "жаз8", "жаз16",
+    "жаз32", "жаз64", "тоқтат", "үзіліс_қос", "үзіліс_өшір", "cr_оқы", "cr_жаз", "msr_оқы", "msr_жаз", "тактілер", "cpuid", "invlpg",
+    "жад_көшір", "жад_толтыр", "үзіліс_орнату", "жүктеу_ақпараты", "пернетақта_оқы",
 ];
+
+/// Аппараттық ішкі функциялар (ядро режимі): (аты, рантайм символы, аргумент түрлері, мән қайтарады ма).
+/// `i` — бүтін, `a` — мекенжай (бүтін немесе көрсеткіш), `h` — үзіліс өңдеушісі.
+const HW_BUILTINS: &[(&str, &str, &str, bool)] = &[
+    ("порт_оқы8", "tlp_hw_in8", "i", true),
+    ("порт_оқы16", "tlp_hw_in16", "i", true),
+    ("порт_оқы32", "tlp_hw_in32", "i", true),
+    ("порт_жаз8", "tlp_hw_out8", "ii", false),
+    ("порт_жаз16", "tlp_hw_out16", "ii", false),
+    ("порт_жаз32", "tlp_hw_out32", "ii", false),
+    ("оқы8", "tlp_hw_rd8", "a", true),
+    ("оқы16", "tlp_hw_rd16", "a", true),
+    ("оқы32", "tlp_hw_rd32", "a", true),
+    ("оқы64", "tlp_hw_rd64", "a", true),
+    ("жаз8", "tlp_hw_wr8", "ai", false),
+    ("жаз16", "tlp_hw_wr16", "ai", false),
+    ("жаз32", "tlp_hw_wr32", "ai", false),
+    ("жаз64", "tlp_hw_wr64", "ai", false),
+    ("тоқтат", "tlp_hw_hlt", "", false),
+    ("үзіліс_қос", "tlp_hw_sti", "", false),
+    ("үзіліс_өшір", "tlp_hw_cli", "", false),
+    ("cr_оқы", "tlp_hw_cr_read", "i", true),
+    ("cr_жаз", "tlp_hw_cr_write", "ii", false),
+    ("msr_оқы", "tlp_hw_msr_read", "i", true),
+    ("msr_жаз", "tlp_hw_msr_write", "ii", false),
+    ("тактілер", "tlp_hw_rdtsc", "", true),
+    ("cpuid", "tlp_hw_cpuid", "ii", true),
+    ("invlpg", "tlp_hw_invlpg", "a", false),
+    ("жад_көшір", "memcpy", "aai", false),
+    ("жад_толтыр", "memset", "aii", false),
+    ("үзіліс_орнату", "tlp_hw_set_handler", "ih", false),
+    ("жүктеу_ақпараты", "tlp_hw_mbi", "", true),
+    ("пернетақта_оқы", "tlp_hw_key", "", true),
+];
+
+static KERNEL_MODE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Ядро режимін қосады (`tulpar os`): аппараттық ішкі функциялар рұқсат етіледі.
+pub fn set_kernel_mode(on: bool) {
+    KERNEL_MODE.store(on, std::sync::atomic::Ordering::Relaxed);
+}
 
 #[derive(PartialEq, Clone, Copy)]
 enum St {
@@ -1500,8 +1544,57 @@ impl Checker {
         }
     }
 
+    fn hw_builtin(&mut self, name: &str, sym: &'static str, kinds: &str, ret: bool, args: &[Arg], pos: Pos) -> Res<TExpr> {
+        if !KERNEL_MODE.load(std::sync::atomic::Ordering::Relaxed) {
+            return err(pos, format!("`{}` тек ядро режимінде қолжетімді (`tulpar os build`)", name));
+        }
+        self.need_manual(pos)?;
+        self.arg_count(name, args, kinds.len(), kinds.len(), pos)?;
+        let mut v = Vec::new();
+        for (a, k) in args.iter().zip(kinds.chars()) {
+            let e = match k {
+                'i' => self.arg(a, Some(&Ty::Int))?,
+                'h' => self.arg(a, Some(&Ty::Func(vec![Ty::Int, Ty::Int], Box::new(Ty::None))))?,
+                _ => {
+                    let e = self.arg(a, None)?;
+                    if !matches!(e.ty, Ty::Int | Ty::Ptr(_)) {
+                        return err(a.value.pos, format!("`{}` мекенжайды (бүтін немесе көрсеткіш) күтеді, бірақ `{}` берілді", name, self.tn(&e.ty)));
+                    }
+                    e
+                }
+            };
+            v.push(e);
+        }
+        Ok(texpr(TK::Builtin(Bi::Hw(sym, ret), v), if ret { Ty::Int } else { Ty::None }))
+    }
+
     fn builtin_call(&mut self, name: &str, args: &[Arg], pos: Pos, _exp: Option<&Ty>) -> Res<TExpr> {
+        if let Some(&(_, sym, kinds, ret)) = HW_BUILTINS.iter().find(|h| h.0 == name) {
+            return self.hw_builtin(name, sym, kinds, ret, args, pos);
+        }
         match name {
+            "мекен" => {
+                self.need_manual(pos)?;
+                self.arg_count(name, args, 2, 2, pos)?;
+                if !self.is_type_name(&args[0].value) {
+                    return err(args[0].value.pos, "бірінші аргумент тип болуы керек: `мекен(байт, 0xB8000)`");
+                }
+                let t = self.expr_as_type(&args[0].value)?;
+                if t.is_unit() {
+                    return err(pos, "`жоқ` типіне көрсеткіш жасауға болмайды");
+                }
+                let a = self.arg(&args[1], Some(&Ty::Int))?;
+                Ok(texpr(TK::Builtin(Bi::PtrCast, vec![a]), Ty::Ptr(Box::new(t))))
+            }
+            "мекенжай" => {
+                self.need_manual(pos)?;
+                self.arg_count(name, args, 1, 1, pos)?;
+                let a = self.arg(&args[0], None)?;
+                if !matches!(a.ty, Ty::Ptr(_)) {
+                    return err(pos, "`мекенжай` көрсеткішті (`*T`) күтеді");
+                }
+                Ok(texpr(TK::Builtin(Bi::PtrCast, vec![a]), Ty::Int))
+            }
             "жаз" | "көрсет" => {
                 if args.iter().any(|a| a.name.is_some()) {
                     return err(pos, format!("`{}` атаулы аргументтерді қабылдамайды", name));

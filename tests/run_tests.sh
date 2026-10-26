@@ -32,5 +32,24 @@ for src in tests/errors/*.tlp; do
         fail=$((fail+1)); echo "ҚАТЕ: $src (код $code) күтілген: «$want»"; echo "$got" | head -3
     fi
 done
+# ядро режимі (QEMU қажет): tests/os/*.tlp -> tests/os/*.out, tests/os/errors/*.tlp -> күтілген қате мәтіні
+if command -v qemu-system-x86_64 >/dev/null && command -v objcopy >/dev/null && [ -f target/release/libtulpar_kernel.a ]; then
+    for src in tests/os/*.tlp; do
+        exp="${src%.tlp}.out"
+        got=$(timeout 120 $T os run "$src" 2>&1)
+        if [ "$got" == "$(cat "$exp")" ]; then pass=$((pass+1)); else
+            fail=$((fail+1)); echo "ҚАТЕ (ядро): $src"; diff <(echo "$got") "$exp" | head -5
+        fi
+    done
+    for src in tests/os/errors/*.tlp; do
+        want=$(head -1 "$src" | sed 's/^# ШЫҒЫС: //')
+        got=$(timeout 120 $T os run "$src" 2>&1); code=$?
+        if [ $code -ne 0 ] && [[ "$got" == *"$want"* ]]; then pass=$((pass+1)); else
+            fail=$((fail+1)); echo "ҚАТЕ (ядро): $src (код $code) күтілген: «$want»"; echo "$got" | head -3
+        fi
+    done
+else
+    echo "(ядро тесттері өткізілді: qemu-system-x86_64 жоқ)"
+fi
 echo "өтті: $pass, құлады: $fail"
 [ $fail -eq 0 ]

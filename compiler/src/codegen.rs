@@ -976,11 +976,21 @@ fn bytes_directive(out: &mut String, bytes: &[u8]) {
 }
 
 pub fn gen_module(m: &Module, funcs: &[IrFunc], cx: &ModuleCtx, spill_all: bool) -> String {
+    gen_module_ex(m, funcs, cx, spill_all, false)
+}
+
+/// `kernel` — ядро режимі: `_start` жоқ (оны жүктеуші береді), модуль сипаттамасы `tlp_module_desc` кестесінде.
+pub fn gen_module_ex(m: &Module, funcs: &[IrFunc], cx: &ModuleCtx, spill_all: bool, kernel: bool) -> String {
     let mut out = String::new();
     out.push_str(".intel_syntax noprefix\n.text\n");
-    out.push_str(".globl _start\n_start:\n");
-    out.push_str("    mov rdi, rsp\n    lea rsi, [rip + tlp_globals]\n    lea rdx, [rip + tlp_globals_end]\n    lea rcx, [rip + tlp_class_table]\n");
-    out.push_str("    lea r8, [rip + tlp_info]\n    and rsp, -16\n    call tlp_rt_start\n    ud2\n\n");
+    if kernel {
+        out.push_str(".section .data\n.balign 8\n.globl tlp_module_desc\ntlp_module_desc:\n");
+        out.push_str("    .quad tlp_globals, tlp_globals_end, tlp_class_table, tlp_info\n.text\n");
+    } else {
+        out.push_str(".globl _start\n_start:\n");
+        out.push_str("    mov rdi, rsp\n    lea rsi, [rip + tlp_globals]\n    lea rdx, [rip + tlp_globals_end]\n    lea rcx, [rip + tlp_class_table]\n");
+        out.push_str("    lea r8, [rip + tlp_info]\n    and rsp, -16\n    call tlp_rt_start\n    ud2\n\n");
+    }
     let mut consts = Consts::default();
     let mut all_lines: Vec<(String, u16, u32)> = Vec::new();
     for (i, f) in funcs.iter().enumerate() {

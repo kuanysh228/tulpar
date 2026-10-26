@@ -427,7 +427,7 @@ unsafe fn fill() -> bool {
         return false;
     }
     loop {
-        let r = sys3(SYS_READ, 0, core::ptr::addr_of_mut!(IN_BUF) as usize, IN_CAP);
+        let r = stdin_read(core::ptr::addr_of_mut!(IN_BUF) as *mut u8, IN_CAP);
         if r == -4 {
             continue;
         }

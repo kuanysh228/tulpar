@@ -1286,6 +1286,16 @@ impl<'a> FB<'a> {
                 self.callv("tlp_file_rename", &[a, b]);
                 return None;
             }
+            Bi::PtrCast => self.val(&args[0]),
+            Bi::Hw(sym, ret) => {
+                let vs: Vec<VReg> = args.iter().map(|a| self.val(a)).collect();
+                if *ret {
+                    self.calli(sym, &vs)
+                } else {
+                    self.callv(sym, &vs);
+                    return None;
+                }
+            }
             Bi::NetTimeout => {
                 let fd = self.val(&args[0]);
                 let ms = self.val(&args[1]);
