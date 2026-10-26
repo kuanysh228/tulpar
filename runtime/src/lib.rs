@@ -4,6 +4,8 @@
 
 pub mod common;
 pub mod dict;
+pub mod dns;
+pub mod http;
 pub mod fmt;
 pub mod gc;
 pub mod list;

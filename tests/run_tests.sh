@@ -51,5 +51,29 @@ if command -v qemu-system-x86_64 >/dev/null && command -v objcopy >/dev/null && 
 else
     echo "(ядро тесттері өткізілді: qemu-system-x86_64 жоқ)"
 fi
+# Windows .exe (wine қажет): барлық тесттер .exe ретінде құрастырылып wine-да орындалады; TULPAR_TEST_WINE=0 өшіреді
+if command -v wine >/dev/null && [ -f target/release/libtulpar_win.a ] && [ "${TULPAR_TEST_WINE:-1}" != 0 ]; then
+    export WINEDEBUG=-all WINEDLLOVERRIDES="mscoree,mshtml=d"
+    wexe=$(mktemp -u /tmp/tulpar-wine-XXXXXX.exe)
+    for src in tests/*.tlp tests/progs/*.tlp; do
+        exp="${src%.tlp}.out"
+        [ -f "$exp" ] || continue
+        $T build "$src" -o "$wexe" >/dev/null 2>&1 || { fail=$((fail+1)); echo "ҚАТЕ (windows құрастыру): $src"; continue; }
+        got=$(timeout 120 wine "$wexe" 2>/dev/null | tr -d '\r')
+        if [ "$got" == "$(cat "$exp")" ]; then pass=$((pass+1)); else
+            fail=$((fail+1)); echo "ҚАТЕ (windows): $src"; diff <(echo "$got") "$exp" | head -5
+        fi
+    done
+    for src in tests/errors/*.tlp; do
+        want=$(head -1 "$src" | sed 's/^# ШЫҒЫС: //')
+        if ! got=$($T build "$src" -o "$wexe" 2>&1); then :; else got=$(timeout 120 wine "$wexe" 2>&1 | tr -d '\r'); fi
+        if [[ "$got" == *"$want"* ]]; then pass=$((pass+1)); else
+            fail=$((fail+1)); echo "ҚАТЕ (windows): $src күтілген: «$want»"; echo "$got" | head -3
+        fi
+    done
+    rm -f "$wexe"
+else
+    echo "(Windows тесттері өткізілді: wine жоқ)"
+fi
 echo "өтті: $pass, құлады: $fail"
 [ $fail -eq 0 ]

@@ -13,4 +13,5 @@ pub mod loader;
 pub mod lower;
 pub mod opt;
 pub mod parser;
+pub mod pe;
 pub mod regalloc;

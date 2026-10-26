@@ -6,7 +6,7 @@
 
 [English](README.md) · [Русский](README.ru.md) · **Қазақша**
 
-![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Language: Tulpar](https://img.shields.io/badge/language-Tulpar_(.tlp)-e8b923) ![Platform: Linux x86-64](https://img.shields.io/badge/platform-linux--x86--64-blue) ![Written in Rust](https://img.shields.io/badge/compiler-Rust-orange)
+![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Language: Tulpar](https://img.shields.io/badge/language-Tulpar_(.tlp)-e8b923) ![Platform: Linux x86-64 / Windows x64 (cross)](https://img.shields.io/badge/platform-linux--x86--64%20%7C%20windows%20(cross)-blue) ![Written in Rust](https://img.shields.io/badge/compiler-Rust-orange)
 
 Қазақ синтаксисі бар, Python сияқты қарапайым, бірақ **нативті машиналық кодқа компиляцияланатын** бағдарламалау тілі.
 Файл кеңейтімі — `.tlp`. Компилятор мен рантайм **нөлден** жазылған (LLVM жоқ, C компиляторы жоқ, libc жоқ).
@@ -29,7 +29,7 @@
 
 ## Орнату және іске қосу
 
-Қажет: Linux x86-64, Rust (cargo), GNU binutils (`as`, `ld`).
+Қажет: Linux x86-64, Rust (cargo), GNU binutils (`as`, `ld`). Windows `.exe` файлдары Linux-тан сол құралдармен кросс-компиляцияланады (PE файлын компилятор өзі жазады; `wine` тек оларды Linux-та іске қосу үшін). Толығырақ: [docs/windows.md](docs/windows.md).
 
 ```bash
 cargo build --release          # компилятор + рантайм
@@ -38,6 +38,8 @@ tests/run_tests.sh             # тесттер
 
 tulpar run   файл.tlp          # компиляциялап іске қосу
 tulpar build файл.tlp -o prog  # дербес орындалатын файл (libc-сіз, статикалық ELF)
+tulpar build файл.tlp -o prog.exe            # Windows x64 .exe (Linux-тан кросс-компиляция, қосымша құралсыз; немесе --target windows)
+tulpar run   файл.tlp --target windows       # .exe жасап, `wine` арқылы іске қосу
 tulpar asm   файл.tlp          # ассемблер кодын көру
 tulpar check файл.tlp          # тек тексеру
 ```
@@ -199,10 +201,17 @@ GC — консервативті *mark-sweep* (стек пен глобал а�
     желі_жаз(клиент, f"HTTP/1.1 200 OK\r\nContent-Length: {дене.байт_саны()}\r\n\r\n{дене}")
     желі_жап(клиент)
 
-с = қосыл("127.0.0.1", 8080)          # клиент; сәтсіз болса -1 (тек IPv4 және localhost, DNS жоқ)
+с = қосыл("google.com", 80)            # клиент; енді нақты DNS жұмыс істейді (IPv4 литералдары мен `localhost` да жұмыс істейді), сәтсіз болса -1
 ```
 
-Толық мысалдар: `examples/http_server.tlp`, `examples/http_client.tlp`. HTTPS/TLS және DNS әлі жоқ; бір ағын (сұраныстар кезекпен өңделеді).
+Жоғары деңгейлі HTTP/HTTPS клиенті, нақты DNS-пен:
+
+```python
+дене = тор_алу("https://example.com/")                              # GET, қайта бағыттауды ереді, желі қатесінде немесе HTTP >= 400 болса тоқтайды
+код, тақырыптар, дене = тор_сұрау(url, "POST", дене, {"X-A": "1"})   # бір сұрау, қайта бағыттамайды: (код, тақырыптар сөздігі, дене) қайтарады
+```
+
+Толық мысалдар: `examples/http_server.tlp`, `examples/http_client.tlp`. Толық ақпарат, платформалар бойынша HTTPS қолдауы және шектеулер: [docs/networking.md](docs/networking.md). Бір ағын (сұраныстар кезекпен өңделеді).
 
 ## Көп файлды бағдарламалар
 
@@ -291,7 +300,7 @@ Python эталонымен салыстырады.
 
 ## Шектеулер (қазір)
 
-* Желі: тек TCP/IPv4, TLS және DNS жоқ, бір ағын; тек Linux x86-64; `as` және `ld` қажет (өз ассемблері/линкері әлі жоқ)
+* Желі: тек TCP/IPv4, бір ағын; HTTPS (`тор_алу`/`тор_сұрау`-дағы `https://`) Windows құрастыруларында (меншікті Schannel) жұмыс істейді, бірақ Linux құрастыруларында әзірге жоқ; компилятор Linux x86-64-те жұмыс істейді (Linux және Windows x64-ке мақсаттауға болады); `as` және `ld` қажет (өз ассемблері/линкері әлі жоқ)
 * `импорт` — include сияқты (атаулар кеңістігі жоқ); лямбда сыртқы айнымалыларды ұстамайды, жалпылама (generic) пайдаланушы функциялары, ерекше жағдайлар (`try`) жоқ
 * Бүтін сан 64 бит (үлкен сандар жоқ, асып кетсе айналады)
 * GC бір ағынды және консервативті (сирек жағдайда жалған сілтеме жадты біраз ұстап тұруы мүмкін)

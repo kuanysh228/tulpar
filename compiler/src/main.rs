@@ -10,6 +10,8 @@ Tulpar — қазақ синтаксисі бар компиляцияланат
 Қолдану:
   tulpar run   файл.tlp [аргументтер...]   компиляциялап іске қосу
   tulpar build файл.tlp [-o шығыс]         орындалатын файл жасау
+  tulpar build файл.tlp --target windows [-o файл.exe]   Windows x64 .exe (кросс-компиляция; -o *.exe де жеткілікті)
+  tulpar run   файл.tlp --target windows   .exe жасап, `wine` арқылы іске қосу
   tulpar asm   файл.tlp [-o файл.s]        ассемблер кодын шығару
   tulpar check файл.tlp                    тек синтаксис пен типтерді тексеру
   tulpar interp файл.tlp                   интерпретатормен іске қосу (компиляциясыз; ендіру режимі)
@@ -28,11 +30,13 @@ Tulpar — қазақ синтаксисі бар компиляцияланат
 ";
 
 const KERNEL_LD: &str = include_str!("../../kernel/kernel.ld");
+const WIN_LD: &str = include_str!("../../winrt/win.ld");
 
 struct Opts {
     spill_all: bool,
     dump_ir: bool,
     kernel: bool,
+    windows: bool,
 }
 
 fn compile_to_asm(path: &str, o: &Opts) -> Result<String, String> {
@@ -113,9 +117,40 @@ fn build_kernel(path: &str, out: &Path, o: &Opts) -> Result<(), String> {
     r
 }
 
+/// Windows x64 .exe: ассемблер -> `ld` (win.ld, ELF) -> `pe::elf_to_pe`. Қосымша құрал (mingw) қажет емес.
+fn build_windows(path: &str, out: &Path, o: &Opts) -> Result<(), String> {
+    let asm = compile_to_asm(path, o)?;
+    let rt = find_lib("libtulpar_win.a", "TULPAR_WIN_RT")?;
+    let tmp = std::env::temp_dir().join(format!("tulpar-win-{}-{}", std::process::id(), out.file_name().and_then(|s| s.to_str()).unwrap_or("p")));
+    std::fs::create_dir_all(&tmp).map_err(|e| e.to_string())?;
+    let (s, obj, ld, elf) = (tmp.join("prog.s"), tmp.join("prog.o"), tmp.join("win.ld"), tmp.join("prog.elf"));
+    std::fs::write(&s, asm).map_err(|e| e.to_string())?;
+    std::fs::write(&ld, WIN_LD).map_err(|e| e.to_string())?;
+    let r = (|| {
+        run_tool(Command::new("as").arg("--64").arg("-o").arg(&obj).arg(&s), "as")?;
+        run_tool(
+            Command::new("ld")
+                .args(["-m", "elf_x86_64", "-static", "-z", "noexecstack", "-z", "max-page-size=4096", "--gc-sections", "-T"])
+                .arg(&ld)
+                .arg("-o")
+                .arg(&elf)
+                .arg(&obj)
+                .arg(&rt),
+            "ld",
+        )?;
+        let pe = tulpar::pe::elf_to_pe(&std::fs::read(&elf).map_err(|e| e.to_string())?)?;
+        std::fs::write(out, pe).map_err(|e| e.to_string())
+    })();
+    let _ = std::fs::remove_dir_all(&tmp);
+    r
+}
+
 fn build(path: &str, out: &Path, o: &Opts) -> Result<(), String> {
     if o.kernel {
         return build_kernel(path, out, o);
+    }
+    if o.windows {
+        return build_windows(path, out, o);
     }
     let asm = compile_to_asm(path, o)?;
     let rt = find_runtime()?;
@@ -152,7 +187,7 @@ fn main() {
     let cmd = args[0].as_str();
     let mut file = None;
     let mut output: Option<String> = None;
-    let mut opts = Opts { spill_all: false, dump_ir: false, kernel };
+    let mut opts = Opts { spill_all: false, dump_ir: false, kernel, windows: false };
     let mut rest: Vec<String> = Vec::new();
     let mut gui = false;
     let mut mem = "128M".to_string();
@@ -166,6 +201,17 @@ fn main() {
             "-O0" => opts.spill_all = true,
             "--ir" => opts.dump_ir = true,
             "--gui" => gui = true,
+            "--target" if i + 1 < args.len() => {
+                match args[i + 1].as_str() {
+                    "windows" | "win" | "exe" | "windows-x86_64" => opts.windows = true,
+                    "linux" | "linux-x86_64" => opts.windows = false,
+                    t => {
+                        eprintln!("қате: белгісіз --target `{}` (windows немесе linux)", t);
+                        exit(2);
+                    }
+                }
+                i += 1;
+            }
             "--mem" if i + 1 < args.len() => {
                 mem = args[i + 1].clone();
                 i += 1;
@@ -208,7 +254,11 @@ fn main() {
             println!("{}", out);
         }
         "build" => {
-            let out = output.unwrap_or_else(|| Path::new(&file).with_extension("").to_string_lossy().into_owned());
+            if output.as_deref().is_some_and(|o| o.to_lowercase().ends_with(".exe")) {
+                opts.windows = true;
+            }
+            let default_ext = if opts.windows { "exe" } else { "" };
+            let out = output.unwrap_or_else(|| Path::new(&file).with_extension(default_ext).to_string_lossy().into_owned());
             build(&file, Path::new(&out), &opts).unwrap_or_else(|e| fail(e));
             println!("{}", out);
         }
@@ -274,6 +324,16 @@ fn main() {
                     None => exit(1),
                 },
                 Err(e) => fail(format!("қате: `qemu-system-x86_64` іске қосылмады: {} (QEMU орнатылған ба?)", e)),
+            }
+        }
+        "run" if opts.windows => {
+            let out = std::env::temp_dir().join(format!("tulpar-run-{}.exe", std::process::id()));
+            build(&file, &out, &opts).unwrap_or_else(|e| fail(e));
+            let status = Command::new("wine").arg(&out).args(&rest).status();
+            let _ = std::fs::remove_file(&out);
+            match status {
+                Ok(s) => exit(s.code().unwrap_or(1)),
+                Err(e) => fail(format!("қате: `wine` іске қосылмады: {} (Windows .exe-ні Linux-та іске қосу үшін wine қажет)", e)),
             }
         }
         "run" => {

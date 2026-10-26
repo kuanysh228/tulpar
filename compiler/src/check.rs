@@ -12,7 +12,7 @@ const BUILTIN_NAMES: &[&str] = &[
     "босат", "жина", "жад", "қате", "аралық", "тізім", "сөздік", "аргтар", "файл_оқы", "файл_жаз", "файл_қос", "уақыт", "кездейсоқ",
     "кездейсоқ_аралық", "тұқым", "шығу", "синус", "косинус", "тангенс", "арктангенс", "арктангенс2", "экспонента", "логарифм",
     "логарифм10", "қосынды", "нөмірле", "мысал", "түрлендір", "жиын", "код", "таңба", "тыңда", "тыңда_локал", "қабылда", "қосыл", "желі_оқы", "желі_жаз", "желі_жап",
-    "желі_күту", "файл_бар", "файл_жой", "файл_ауыстыр", "қалта_жаса", "мекен", "мекенжай",
+    "желі_күту", "файл_бар", "файл_жой", "файл_ауыстыр", "қалта_жаса", "мекен", "мекенжай", "тор_алу", "тор_сұрау",
     "порт_оқы8", "порт_оқы16", "порт_оқы32", "порт_жаз8", "порт_жаз16", "порт_жаз32", "оқы8", "оқы16", "оқы32", "оқы64", "жаз8", "жаз16",
     "жаз32", "жаз64", "тоқтат", "үзіліс_қос", "үзіліс_өшір", "cr_оқы", "cr_жаз", "msr_оқы", "msr_жаз", "тактілер", "cpuid", "invlpg",
     "жад_көшір", "жад_толтыр", "үзіліс_орнату", "жүктеу_ақпараты", "пернетақта_оқы",
@@ -1873,6 +1873,30 @@ impl Checker {
                 let fd = self.arg(&args[0], Some(&Ty::Int))?;
                 let t = self.arg(&args[1], Some(&Ty::Str))?;
                 Ok(texpr(TK::Builtin(Bi::NetWrite, vec![fd, t]), Ty::None))
+            }
+            "тор_алу" => {
+                self.arg_count(name, args, 1, 1, pos)?;
+                let u = self.arg(&args[0], Some(&Ty::Str))?;
+                Ok(texpr(TK::Builtin(Bi::HttpGet, vec![u]), Ty::Str))
+            }
+            "тор_сұрау" => {
+                self.arg_count(name, args, 1, 4, pos)?;
+                let hdr_ty = Ty::Dict(Box::new(Ty::Str), Box::new(Ty::Str));
+                let u = self.arg(&args[0], Some(&Ty::Str))?;
+                let method = match args.get(1) {
+                    Some(a) => self.arg(a, Some(&Ty::Str))?,
+                    None => texpr(TK::Str("GET".into()), Ty::Str),
+                };
+                let body = match args.get(2) {
+                    Some(a) => self.arg(a, Some(&Ty::Str))?,
+                    None => texpr(TK::Str(String::new()), Ty::Str),
+                };
+                let headers = match args.get(3) {
+                    Some(a) => self.arg(a, Some(&hdr_ty))?,
+                    None => texpr(TK::DictLit(vec![]), hdr_ty),
+                };
+                let ret = Ty::Tuple(vec![Ty::Int, Ty::Dict(Box::new(Ty::Str), Box::new(Ty::Str)), Ty::Str]);
+                Ok(texpr(TK::Builtin(Bi::HttpRequest, vec![u, method, body, headers]), ret))
             }
             "жиын" => {
                 self.arg_count(name, args, 1, 1, pos)?;

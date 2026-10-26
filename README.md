@@ -6,7 +6,7 @@
 
 **English** · [Русский](README.ru.md) · [Қазақша](README.kk.md)
 
-![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Language: Tulpar](https://img.shields.io/badge/language-Tulpar_(.tlp)-e8b923) ![Platform: Linux x86-64](https://img.shields.io/badge/platform-linux--x86--64-blue) ![Written in Rust](https://img.shields.io/badge/compiler-Rust-orange)
+![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Language: Tulpar](https://img.shields.io/badge/language-Tulpar_(.tlp)-e8b923) ![Platform: Linux x86-64 / Windows x64 (cross)](https://img.shields.io/badge/platform-linux--x86--64%20%7C%20windows%20(cross)-blue) ![Written in Rust](https://img.shields.io/badge/compiler-Rust-orange)
 
 A programming language with **Kazakh syntax** that is as simple as Python but **compiles to native machine code**.
 Source files use the `.tlp` extension. The compiler and the runtime are written **from scratch**: no LLVM, no C compiler, no libc.
@@ -29,7 +29,7 @@ Source files use the `.tlp` extension. The compiler and the runtime are written 
 
 ## Install and run
 
-Requirements: Linux x86-64, Rust (cargo) to build the compiler once, GNU binutils (`as`, `ld`).
+Requirements: Linux x86-64, Rust (cargo) to build the compiler once, GNU binutils (`as`, `ld`). Windows `.exe` files are cross-compiled from Linux with the same tools (the PE file is written by the compiler itself; `wine` is only needed to run them on Linux). Details: [docs/windows.md](docs/windows.md).
 
 ```bash
 cargo build --release          # compiler + runtime
@@ -38,6 +38,8 @@ tests/run_tests.sh             # test suite
 
 tulpar run   file.tlp          # compile and run
 tulpar build file.tlp -o prog  # standalone executable (static ELF, no libc)
+tulpar build file.tlp -o prog.exe            # Windows x64 .exe (cross-compiled from Linux, no extra tools; also --target windows)
+tulpar run   file.tlp --target windows       # build an .exe and run it with `wine`
 tulpar asm   file.tlp          # show generated assembly
 tulpar check file.tlp          # type-check only
 ```
@@ -224,10 +226,17 @@ Objects without pointers (strings, `тізім[бүтін]`, …) are not scanne
     желі_жаз(клиент, f"HTTP/1.1 200 OK\r\nContent-Length: {дене.байт_саны()}\r\n\r\n{дене}")
     желі_жап(клиент)
 
-с = қосыл("127.0.0.1", 8080)          # client; -1 on failure (IPv4 and localhost only, no DNS)
+с = қосыл("google.com", 80)           # client; real DNS now resolves hostnames (literal IPv4 and `localhost` still work), -1 on failure
 ```
 
-Full examples: `examples/http_server.tlp`, `examples/http_client.tlp`. No HTTPS/TLS or DNS yet; single-threaded (requests are handled one at a time).
+Higher-level HTTP/HTTPS client, with real DNS:
+
+```python
+дене = тор_алу("https://example.com/")                         # GET, follows redirects, raises on network error or HTTP >= 400
+код, тақырыптар, дене = тор_сұрау(url, "POST", дене, {"X-A": "1"})  # one request, no redirects: returns (status, headers dict, body)
+```
+
+Full examples: `examples/http_server.tlp`, `examples/http_client.tlp`. Details, HTTPS platform support and limitations: [docs/networking.md](docs/networking.md). Single-threaded (requests are handled one at a time).
 
 ## Multi-file programs
 
@@ -315,7 +324,7 @@ The differential fuzzer (`python3 tools/fuzz.py 0 500`) compares random programs
 
 ## Limitations
 
-* Networking: TCP/IPv4 only, no TLS or DNS, single-threaded; Linux x86-64 only; needs `as` and `ld` (no built-in assembler/linker yet)
+* Networking: TCP/IPv4 only, single-threaded; HTTPS (`https://` in `тор_алу`/`тор_сұрау`) works on Windows builds (native Schannel) but not yet on Linux builds; the compiler runs on Linux x86-64 (it can target Linux and Windows x64); needs `as` and `ld` (no built-in assembler/linker yet)
 * `импорт` is include-like (no namespaces); lambdas do not capture variables; no user-defined generics; no exceptions (`try`)
 * Integers are 64-bit (no big integers, they wrap on overflow)
 * The GC is single-threaded and conservative (a false pointer can occasionally keep some memory alive)

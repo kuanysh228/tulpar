@@ -100,10 +100,15 @@ fn parse_ip(h: &[u8]) -> Option<u32> {
     Some((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3])
 }
 
-/// IPv4 мекенжайына (`127.0.0.1` немесе `localhost`) қосылады; сәтсіз болса -1. DNS жоқ.
+/// Хост атауын IPv4 мекенжайға айналдырады: әуелі литерал (`1.2.3.4`, `localhost`), болмаса нақты DNS сұрауы (A жазба).
+pub unsafe fn resolve(host: &[u8]) -> Option<u32> {
+    parse_ip(host).or_else(|| crate::dns::resolve_a(host))
+}
+
+/// Хостқа (IPv4 литералы, `localhost` немесе доменнің нақты DNS атауы) қосылады; сәтсіз болса -1.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn tlp_net_connect(host: Str, port: i64) -> i64 {
-    let ip = match parse_ip(bytes(host)) {
+    let ip = match resolve(bytes(host)) {
         Some(ip) => ip,
         None => return -1,
     };

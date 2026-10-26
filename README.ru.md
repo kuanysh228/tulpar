@@ -6,7 +6,7 @@
 
 [English](README.md) · **Русский** · [Қазақша](README.kk.md)
 
-![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Language: Tulpar](https://img.shields.io/badge/language-Tulpar_(.tlp)-e8b923) ![Platform: Linux x86-64](https://img.shields.io/badge/platform-linux--x86--64-blue) ![Written in Rust](https://img.shields.io/badge/compiler-Rust-orange)
+![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Language: Tulpar](https://img.shields.io/badge/language-Tulpar_(.tlp)-e8b923) ![Platform: Linux x86-64 / Windows x64 (cross)](https://img.shields.io/badge/platform-linux--x86--64%20%7C%20windows%20(cross)-blue) ![Written in Rust](https://img.shields.io/badge/compiler-Rust-orange)
 
 Язык программирования с **казахским синтаксисом**, простой как Python, но **компилируемый в нативный машинный код**.
 Файлы имеют расширение `.tlp`. Компилятор и рантайм написаны **с нуля**: без LLVM, без C-компилятора, без libc.
@@ -29,7 +29,7 @@
 
 ## Установка и запуск
 
-Нужно: Linux x86-64, Rust (cargo) чтобы один раз собрать компилятор, GNU binutils (`as`, `ld`).
+Нужно: Linux x86-64, Rust (cargo) чтобы один раз собрать компилятор, GNU binutils (`as`, `ld`). Windows-файлы `.exe` кросс-компилируются из Linux теми же инструментами (PE-файл пишет сам компилятор; `wine` нужен только чтобы запускать их в Linux). Подробности: [docs/windows.md](docs/windows.md).
 
 ```bash
 cargo build --release          # компилятор + рантайм
@@ -38,6 +38,8 @@ tests/run_tests.sh             # тесты
 
 tulpar run   файл.tlp          # скомпилировать и запустить
 tulpar build файл.tlp -o prog  # самостоятельный исполняемый файл (статический ELF, без libc)
+tulpar build файл.tlp -o prog.exe            # Windows x64 .exe (кросс-компиляция из Linux, без доп. инструментов; или --target windows)
+tulpar run   файл.tlp --target windows       # собрать .exe и запустить через `wine`
 tulpar asm   файл.tlp          # показать сгенерированный ассемблер
 tulpar check файл.tlp          # только проверка типов
 ```
@@ -202,10 +204,17 @@ GC — консервативный *mark-sweep* (корни: стек и гло
     желі_жаз(клиент, f"HTTP/1.1 200 OK\r\nContent-Length: {дене.байт_саны()}\r\n\r\n{дене}")
     желі_жап(клиент)
 
-с = қосыл("127.0.0.1", 8080)          # клиент; -1 при неудаче (только IPv4 и localhost, DNS нет)
+с = қосыл("google.com", 80)            # клиент; теперь работает настоящий DNS (литералы IPv4 и `localhost` тоже работают), -1 при неудаче
 ```
 
-Полные примеры: `examples/http_server.tlp`, `examples/http_client.tlp`. HTTPS/TLS и DNS пока нет; один поток (запросы обрабатываются по очереди).
+Более высокоуровневый HTTP/HTTPS-клиент, с настоящим DNS:
+
+```python
+дене = тор_алу("https://example.com/")                              # GET, следует редиректам, ошибка при сбое сети или HTTP >= 400
+код, тақырыптар, дене = тор_сұрау(url, "POST", дене, {"X-A": "1"})   # один запрос, без редиректов: возвращает (код, словарь заголовков, тело)
+```
+
+Полные примеры: `examples/http_server.tlp`, `examples/http_client.tlp`. Подробности, поддержка HTTPS по платформам и ограничения: [docs/networking.md](docs/networking.md). Один поток (запросы обрабатываются по очереди).
 
 ## Многофайловые программы
 
@@ -290,7 +299,7 @@ Tulpar близок к Rust/C на простых циклах, примерно
 
 ## Ограничения
 
-* Сеть: только TCP/IPv4, нет TLS и DNS, один поток; только Linux x86-64; нужны `as` и `ld` (своего ассемблера/линкера пока нет)
+* Сеть: только TCP/IPv4, один поток; HTTPS (`https://` в `тор_алу`/`тор_сұрау`) работает в Windows-сборках (нативный Schannel), но пока не в Linux-сборках; компилятор работает на Linux x86-64 (целевые платформы: Linux и Windows x64); нужны `as` и `ld` (своего ассемблера/линкера пока нет)
 * `импорт` работает как include (пространств имён нет); лямбды не захватывают переменные; нет пользовательских обобщений; нет исключений (`try`)
 * Целые 64-битные (длинной арифметики нет, при переполнении «заворачиваются»)
 * GC однопоточный и консервативный (ложный указатель изредка может удерживать часть памяти)

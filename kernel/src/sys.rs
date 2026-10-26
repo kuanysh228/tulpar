@@ -42,6 +42,15 @@ pub unsafe fn os_map(size: usize, _noreserve: bool) -> usize {
     }
 }
 
+pub unsafe fn os_reserve(size: usize) -> usize {
+    os_map(size, true)
+}
+
+#[inline(always)]
+pub unsafe fn os_commit(_addr: usize, _len: usize) -> bool {
+    true
+}
+
 /// GC үйіндісі мен оның метадеректері (бет кестесі, span-дар, белгі стегі) бірге сыйатындай үйінді көлемі.
 pub fn os_heap_hint() -> usize {
     let avail = unsafe { MEM_END - MEM_CUR };

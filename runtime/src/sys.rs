@@ -54,6 +54,17 @@ pub const GC_HEAP_MIN: usize = 1 << 26;
 pub const GC_MARK_CAP: usize = 1 << 27;
 pub const GC_FREE_RUN_CAP: usize = 1 << 20;
 
+/// Үйіндінің адрестік аймағын резервтейді (физикалық жадсыз); `os_commit` арқылы бөлікпен іске қосылады.
+pub unsafe fn os_reserve(size: usize) -> usize {
+    unsafe { os_map(size, true) }
+}
+
+/// Резервтелген аймақтың бөлігін қолдануға дайындайды (Linux-та жад өзі беріледі).
+#[inline(always)]
+pub unsafe fn os_commit(_addr: usize, _len: usize) -> bool {
+    true
+}
+
 /// Үйінді үшін ОЖ бере алатын шамамен көлем (Linux-та шектеусіз: виртуал жад).
 pub fn os_heap_hint() -> usize {
     usize::MAX

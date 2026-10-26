@@ -1192,6 +1192,17 @@ impl<'a> FB<'a> {
                 self.callv("tlp_net_write", &[fd, t]);
                 return None;
             }
+            Bi::HttpGet => {
+                let u = self.val(&args[0]);
+                self.calli("tlp_http_get", &[u])
+            }
+            Bi::HttpRequest => {
+                let u = self.val(&args[0]);
+                let m = self.val(&args[1]);
+                let b = self.val(&args[2]);
+                let h = self.val(&args[3]);
+                self.calli("tlp_http_request", &[u, m, b, h])
+            }
             Bi::ListSortBy(kind) => {
                 let l = self.val(&args[0]);
                 let k = self.val(&args[1]);

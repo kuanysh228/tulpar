@@ -1592,9 +1592,8 @@ impl Interp {
             Bi::Panic => return rt(a[0].as_str().to_string()),
             Bi::Args => Value::list(vec![]),
             Bi::FileRead | Bi::FileWrite(_) | Bi::FileExists | Bi::FileDelete | Bi::FileRename | Bi::MakeDir => return unavailable(),
-            Bi::NetListen | Bi::NetListenLocal | Bi::NetAccept | Bi::NetConnect | Bi::NetRead | Bi::NetWrite | Bi::NetClose | Bi::NetTimeout => {
-                return unavailable()
-            }
+            Bi::NetListen | Bi::NetListenLocal | Bi::NetAccept | Bi::NetConnect | Bi::NetRead | Bi::NetWrite | Bi::NetClose | Bi::NetTimeout
+            | Bi::HttpGet | Bi::HttpRequest => return unavailable(),
             Bi::Time => Value::Float(
                 std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0),
             ),

@@ -136,3 +136,11 @@ pub unsafe extern "C" fn tlp_net_close(_s: i64) {
 pub unsafe extern "C" fn tlp_net_timeout(_s: i64, _ms: i64) {
     fatal(NO_NET.as_bytes())
 }
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tlp_http_get(_u: Str) -> Str {
+    fatal(NO_NET.as_bytes())
+}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tlp_http_request(_u: Str, _m: Str, _b: Str, _h: *mut u64) -> *mut u64 {
+    fatal(NO_NET.as_bytes())
+}

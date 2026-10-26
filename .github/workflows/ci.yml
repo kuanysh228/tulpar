@@ -15,6 +15,10 @@ jobs:
         run: cargo build --release
       - name: Tests
         run: tests/run_tests.sh
+      - name: Windows .exe (build only)
+        run: |
+          ./target/release/tulpar build tests/functions.tlp -o /tmp/functions.exe
+          head -c 2 /tmp/functions.exe | grep -q MZ
       - name: Library tests (embedded interpreter)
         run: cargo test --release -p tulpar
       - name: Differential fuzzer

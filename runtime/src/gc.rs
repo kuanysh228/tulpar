@@ -80,7 +80,7 @@ pub unsafe fn init(globals_lo: usize, globals_hi: usize) {
         let mut size = os_heap_hint().min(GC_HEAP_MAX);
         let mut base = 0;
         while size >= GC_HEAP_MIN {
-            base = os_map(size, true);
+            base = os_reserve(size);
             if base != 0 {
                 break;
             }
@@ -136,6 +136,9 @@ unsafe fn alloc_pages(n: usize) -> (usize, bool) {
             fatal("жад таусылды".as_bytes());
         }
         let a = HEAP_TOP;
+        if !os_commit(a, bytes) {
+            fatal("жад таусылды".as_bytes());
+        }
         HEAP_TOP += bytes;
         (a, true)
     }
